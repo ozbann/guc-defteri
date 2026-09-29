@@ -663,6 +663,10 @@ input,select,textarea{font-size:16px!important}
 .bm.on.blue .bdg-i{background:linear-gradient(135deg,#38bdf8,#2563eb)}
 .bm.on.green .bdg-i{background:linear-gradient(135deg,#34d399,#059669)}
 .bm.on.violet .bdg-i{background:linear-gradient(135deg,#a78bfa,#6d28d9)}
+.hist{flex-wrap:wrap}
+.h-act{display:flex;gap:2px;flex:none}
+.h-act .x svg{width:16px;height:16px}
+.del-conf{display:flex;align-items:center;gap:8px;background:var(--accent-soft);border-radius:14px;padding:8px 10px;font-size:13.5px;font-weight:600;margin-top:-2px}
 #view>*{animation:rise .35s ease both}
 @keyframes rise{from{transform:translateY(6px)}to{transform:none}}
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
@@ -1283,13 +1287,14 @@ const I2={
   check:'<path d="M5 12l5 5 9-10"/>',
   download:'<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
   upload:'<path d="M12 20V9M7 14l5-5 5 5M5 4h14"/>',
+  trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
   trophy:'<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/>'
 };
 const ico=n=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I2[n]}</svg>`;
 const hd=(icon,title,tone,right="")=>`<div class="hd"><span class="badge ${tone}">${ico(icon)}</span><span class="ttl">${title}</span>${right?`<span class="hd-r">${right}</span>`:""}</div>`;
 const vol=w=>(w.ex||[]).reduce((a,e)=>a+e.sets.reduce((b,s)=>b+(+s.w||0)*(+s.r||0),0),0);
 
-let workPick=null, workMode=null;
+let workPick=null, workMode=null, wDel=null;
 function vWork(){
   const p=S.profile;
   if(active){
@@ -1370,7 +1375,7 @@ function vWork(){
   </div>
   <div class="card">
     ${hd("clock","Son antrenmanlar","b-blue")}
-    ${hist.length?`<div class="list">${hist.map(w=>{const d=parseD(w.date);const v=Math.round(vol(w));return `<div class="hist"><div class="dt"><b>${d.getDate()}</b><span>${AYLAR[d.getMonth()]}</span></div><div class="grow" style="min-width:0"><div><b>${w.pv===2?dayName(w.plan)+(w.plan==="F"?"":" günü"):"İdman"}</b> <span class="muted small">${w.min?w.min+" dk":""}${v?" · "+v.toLocaleString("tr-TR")+" kg hacim":""}</span></div><div class="small muted clip">${w.watchOnly?"Apple Watch kaydı":w.ex.map(e=>esc(e.name)).join(" · ")}</div>${w.watch?watchLine(w):`<button class="link aw-add" data-wadd="${w.id}">+ Apple Watch verisi</button>`}</div>${w.watch?`<button class="x" data-wadd="${w.id}" aria-label="Saat verisini düzenle">${ico("edit")}</button>`:""}</div>`}).join("")}</div>`
+    ${hist.length?`<div class="list">${hist.map(w=>{const d=parseD(w.date);const v=Math.round(vol(w));return `<div class="hist"><div class="dt"><b>${d.getDate()}</b><span>${AYLAR[d.getMonth()]}</span></div><div class="grow" style="min-width:0"><div><b>${w.pv===2?dayName(w.plan)+(w.plan==="F"?"":" günü"):"İdman"}</b> <span class="muted small">${w.min?w.min+" dk":""}${v?" · "+v.toLocaleString("tr-TR")+" kg hacim":""}</span></div><div class="small muted clip">${w.watchOnly?"Apple Watch kaydı":w.ex.map(e=>esc(e.name)).join(" · ")}</div>${w.watch?watchLine(w):`<button class="link aw-add" data-wadd="${w.id}">+ Apple Watch verisi</button>`}</div><div class="h-act">${w.watch?`<button class="x" data-wadd="${w.id}" aria-label="Saat verisini düzenle">${ico("edit")}</button>`:""}<button class="x" data-wdel="${w.id}" aria-label="Bu idman kaydını sil">${ico("trash")}</button></div></div>${wDel===w.id?`<div class="del-conf"><span class="grow">Bu idman kaydı silinsin mi?</span><button class="btn sm primary" data-wdelyes="${w.id}">Sil</button><button class="btn sm ghost" data-wdelno="1">Vazgeç</button></div>`:""}`}).join("")}</div>`
       :`<div class="empty">İlk antrenmanını bitirdiğinde burada görünecek.</div>`}
   </div>
   ${weekCard}`;
@@ -1601,7 +1606,7 @@ function confetti(){if(matchMedia("(prefers-reduced-motion: reduce)").matches)re
     if(++f<150)requestAnimationFrame(step);else c.remove()})()}
 function showCelebrate(html){const el=$("#celebrate");el.innerHTML=`<div class="cb-back" data-cbclose="1"></div><div class="cb-card" role="dialog" aria-modal="true">${html}<button class="btn primary" data-cbclose="1">Devam</button></div>`;el.hidden=false;confetti()}
 let celebrateQueue=[];
-function pumpCelebrate(){if(!$("#celebrate").hidden||!celebrateQueue.length||active)return;showCelebrate(celebrateQueue.shift())}
+function pumpCelebrate(){if(!$("#celebrate").hidden||!celebrateQueue.length||active||watchAsk)return;showCelebrate(celebrateQueue.shift())}
 function stars(n){return `<div class="cb-stars">${[1,2,3].map(i=>`<span class="${i<=n?"on":""}">★</span>`).join("")}</div>`}
 function periodSummaryHTML(kind,from,to,label){const t=targets(),p=S.profile;let wo=0,water=0,prot=0,kcal=0,days=0;
   for(let d=from;d<to;d=addDays(d,1)){days++;const v=dayRO(d);if(!v)continue;wo+=(v.workouts||[]).length;if((v.water||0)>=p.waterGoal)water++;const fs=v.foods||[];if(fs.length){if(fs.reduce((a,f)=>a+(+f.kcal||0),0)>=t.kcal*.95)kcal++;if(fs.reduce((a,f)=>a+(+f.p||0),0)>=t.protein)prot++}}
@@ -1616,7 +1621,8 @@ function periodSummaryHTML(kind,from,to,label){const t=targets(),p=S.profile;let
 const AYLAR_U=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
 function checkBadgesAndSummaries(){if(!S.profile||active)return;const p=S.profile;p.badges=p.badges||{};const td=today();let changed=false;
   const hasData=allDays().length>0||p.weights.length>0;
-  const nb=badgeList().filter(b=>b.earned&&!p.badges[b.id]);
+  const bl0=badgeList();bl0.forEach(b=>{if(!b.earned&&p.badges[b.id]){delete p.badges[b.id];changed=true}});
+  const nb=bl0.filter(b=>b.earned&&!p.badges[b.id]);
   if(nb.length){nb.forEach(b=>p.badges[b.id]=td);changed=true;
     celebrateQueue.push(`<div class="cb-eyebrow">${nb.length>1?nb.length+" yeni rozet":"Yeni rozet"}</div><div class="cb-title">Tebrikler!</div><div class="cb-badges">${nb.map(badgeTile).join("")}</div>`)}
   const ws=weekStart(td);if(!p.lastWeekSum){p.lastWeekSum=ws;changed=true}
@@ -1950,6 +1956,9 @@ document.addEventListener("click",async ev=>{
   if(ds.cdel){schDel=ds.cdel;render();return}
   if(ds.cdelno){schDel=null;render();return}
   if(ds.cdelyes){S.school.courses=S.school.courses.filter(c=>c.id!==ds.cdelyes);schDel=null;mark("school");toast("Ders listeden çıkarıldı");render();return}
+  if(ds.wdel){wDel=ds.wdel;render();return}
+  if(ds.wdelno){wDel=null;render();return}
+  if(ds.wdelyes){const f=findWorkout(ds.wdelyes);if(f){const x=day(f.d);x.workouts=x.workouts.filter(w=>w.id!==ds.wdelyes);touchDay(f.d);toast("İdman kaydı silindi")}wDel=null;render();return}
   if(ds.wadd){watchAsk=ds.wadd;workMode="train";if(tab!=="work")go("work");else{render();window.scrollTo(0,0)}return}
   if(ds.wskip){watchAsk=null;render();return}
   if(ds.wmode){workMode=ds.wmode;render();return}
@@ -2100,7 +2109,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&sheetOpen)closeShee
 })();
 
 /* yeni sürüm kontrolü (bağımsız sürüm) */
-const APP_V="2026.09.30-0129";
+const APP_V="2026.09.30-0131";
 async function checkUpdate(manual){if(inViewer()||APP_V.startsWith("__"))return;
   try{const r=await fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"});const t=await r.text();const m=t.match(/const APP_V="([^"]+)"/);
     if(m&&m[1]!==APP_V){const el=$("#upd");el.innerHTML=`<span class="grow">Yeni sürüm hazır</span><button class="btn sm" id="btn-upd">Güncelle</button>`;el.hidden=false;el.dataset.v=m[1]}
