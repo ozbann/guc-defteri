@@ -43,7 +43,7 @@
 
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45;-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased}
-.app{max-width:560px;margin:0 auto;padding-inline:18px;padding-block:0 130px}
+.app{max-width:560px;margin:0 auto;padding-inline:18px;padding-block:0 150px}
 header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:16px 12px;margin-inline:-18px;padding-inline:18px}
 .brand{font-family:var(--f-display);font-weight:800;font-size:19px;letter-spacing:-.02em;display:flex;align-items:center;gap:9px;color:var(--fg)}
 .brand i{width:22px;height:22px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:inline-block;box-shadow:0 4px 10px -3px var(--accent)}
@@ -135,10 +135,10 @@ label.f{display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--
 .warn{background:var(--accent-soft);color:var(--fg);border-radius:var(--r);padding:16px 18px;font-size:14px}
 .warn b{color:var(--accent)}
 .warn ul{margin:8px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
-nav.tabs{position:fixed;left:0;right:0;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:10;padding-inline:14px;pointer-events:none}
-nav.tabs .in{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--glass);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);border-radius:26px;padding:6px;box-shadow:0 12px 36px -12px rgba(0,0,0,.35),inset 0 0 0 1px var(--line);pointer-events:auto}
-nav.tabs button{border:0;background:transparent;color:var(--muted);padding:8px 0;border-radius:18px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;letter-spacing:-.1px;min-width:0;white-space:nowrap;overflow:hidden;font-weight:700;cursor:pointer;transition:all .18s}
-nav.tabs button svg{width:21px;height:21px}
+nav.tabs{position:fixed;left:0;right:0;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:10;padding-inline:8px;pointer-events:none}
+nav.tabs .in{max-width:540px;margin:0 auto;display:grid;grid-template-columns:repeat(7,1fr);gap:2px;background:var(--glass);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);border-radius:30px;padding:7px;box-shadow:0 12px 36px -12px rgba(0,0,0,.35),inset 0 0 0 1px var(--line);pointer-events:auto}
+nav.tabs button{border:0;background:transparent;color:var(--muted);padding:11px 0 10px;border-radius:22px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;letter-spacing:-.1px;min-width:0;white-space:nowrap;overflow:hidden;font-weight:700;cursor:pointer;transition:all .18s}
+nav.tabs button svg{width:26px;height:26px}
 nav.tabs button.on{color:var(--accent);background:var(--accent-soft)}
 .chat{display:flex;flex-direction:column;gap:10px}
 .msg{max-width:88%;padding:11px 14px;border-radius:20px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14.5px}
@@ -1099,7 +1099,7 @@ const IC={
   meds:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8.5" width="18" height="7" rx="3.5" transform="rotate(-45 12 12)"/><path d="M9.5 9.5l5 5"/></svg>',
   coach:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 10h8M8 13h5"/></svg>'
 };
-const TABS=[["today","Bugün"],["meds","İlaç"],["work","İdman"],["food","Yemek"],["prog","İlerleme"],["school","Dersler"],["coach","Koç"]];
+const TABS=[["today","Bugün"],["meds","İlaç"],["work","İdman"],["food","Yemek"],["prog","Gelişim"],["school","Dersler"],["coach","Koç"]];
 let tab=(()=>{const h=(location.hash||"").slice(1);return TABS.some(t=>t[0]===h)?h:(lsGet("gd:tab")||"today")})();
 if(!TABS.some(t=>t[0]===tab)&&tab!=="settings"&&tab!=="lifts")tab="today";
 
@@ -2103,7 +2103,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&sheetOpen)closeShee
 })();
 
 /* yeni sürüm kontrolü (bağımsız sürüm) */
-const APP_V="2026.09.30-0152";
+const APP_V="2026.09.30-0155";
 async function checkUpdate(manual){if(inViewer()||APP_V.startsWith("__"))return;
   try{const r=await fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"});const t=await r.text();const m=t.match(/const APP_V="([^"]+)"/);
     if(m&&m[1]!==APP_V){const el=$("#upd");el.innerHTML=`<span class="grow">Yeni sürüm hazır</span><button class="btn sm" id="btn-upd">Güncelle</button>`;el.hidden=false;el.dataset.v=m[1]}
