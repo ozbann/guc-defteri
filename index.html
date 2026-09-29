@@ -610,6 +610,12 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adju
 input,select,textarea{font-size:16px!important}
 .upd{position:fixed;left:50%;transform:translateX(-50%);top:calc(10px + env(safe-area-inset-top,0px));z-index:30;display:flex;align-items:center;gap:12px;background:var(--fg);color:var(--bg);border-radius:999px;padding:8px 8px 8px 18px;font-weight:700;font-size:14px;box-shadow:0 10px 30px -10px rgba(0,0,0,.4);width:max-content;max-width:calc(100% - 32px)}
 .upd .btn{background:var(--accent);color:#fff}
+.wk-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.wk{border:0;border-radius:10px;background:var(--surface);color:var(--muted);font-weight:700;font-size:12.5px;padding:7px 0;cursor:pointer;font-family:var(--f-data)}
+.wk.on{background:var(--accent);color:#fff}
+.wk.cur{box-shadow:inset 0 0 0 2px var(--sch-1);color:var(--fg)}
+.wk.on.cur{box-shadow:inset 0 0 0 2px var(--fg);color:#fff}
+.wk:disabled{opacity:.35;cursor:default}
 #view>*{animation:rise .35s ease both}
 @keyframes rise{from{transform:translateY(6px)}to{transform:none}}
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
@@ -730,7 +736,8 @@ function refreshSheet(reset){if(!sheetOpen)return;const b=$("#sh-body"),c=$("#sh
   b.innerHTML=sheetGrid();b.scrollTop=reset?0:st;c.scrollLeft=sl;const s2=sheetStats();
   $("#sh-tot").innerHTML=s2.k.toLocaleString("tr-TR")+" kcal · "+(s2.left>=0?s2.left.toLocaleString("tr-TR")+" kaldı":Math.abs(s2.left).toLocaleString("tr-TR")+" fazla")}
 function closeSheet(){sheetOpen=false;const el=$("#sheet");el.hidden=true;el.innerHTML="";document.body.classList.remove("noscroll")}
-function quickFoods(){const p=S.profile;return FOODS.concat([{n:"Gainer",por:"1 ölçek",k:+p.gainerKcal||0,p:+p.gainerP||0,c:"protein"}])}
+function gainerPer(){const p=S.profile;const g=+p.gainerG||50,k=+p.gainerK100||378,pr=+p.gainerP100||10;return {g,k:Math.round(g*k/100),p:r1(g*pr/100)}}
+function quickFoods(){const gp=gainerPer();return FOODS.concat([{n:"Gainer",por:"1 kaşık ("+gp.g+" g)",k:gp.k,p:gp.p,c:"protein"}])}
 const qLabel=f=>f.n+" ("+f.por+")";
 
 /* ---------- durum & saklama ---------- */
@@ -940,7 +947,7 @@ function contextText(){
     "Günlük hedefler: "+t.kcal+" kcal, "+t.protein+" g protein, "+p.waterGoal+" ml su.",
     "Sağlık notları (kullanıcının yazdığı): "+(p.healthNotes||"yok"),
     "Düzenli kullanılanlar: "+(meds||"girilmedi"),
-    "Dersler ("+S.school.term.name+", devamsızlık saat olarak kullanılan/sınır): "+S.school.courses.map(c=>c.name+" "+absUsed(c)+"/"+absLimit(c)).join(", "),
+    "Dersler ("+S.school.term.name+", devamsızlık hafta olarak kullanılan/sınır): "+S.school.courses.map(c=>c.name+" "+absUsed(c)+"/"+absLimit(c)).join(", "),
     "Son 7 gün:\n"+last7.join("\n"),
     "Son antrenmanlar:\n"+(ws.join("\n")||"yok"),
     "Aradan önceki kaldırış geçmişi (kullanıcının girdiği, başlangıç "+(S.lifts.start||"?")+"):\n"+(Object.values(S.lifts.ex).filter(e=>e.rows.length).map(e=>{const r=e.rows.slice().sort((a,b)=>a.wk-b.wk);const f=r[0],l=r[r.length-1];return e.name+": "+f.wk+". hafta "+(f.w?f.w+"kg×":"")+f.r+" → "+l.wk+". hafta "+(l.w?l.w+"kg×":"")+l.r}).join("\n")||"yok")
@@ -1401,8 +1408,10 @@ function migrateSchool(sc){if(!sc||!sc.courses)return defaultSchool();if((sc.v||
 const GUN_U=["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar"];
 const toMin=t=>{const [h,m]=t.split(":").map(Number);return h*60+m};
 function weekHours(c){return c.slots.reduce((a,s)=>a+s.h,0)}
-function absLimit(c){return c.limitH!=null?c.limitH:Math.floor(weekHours(c)*S.school.term.weeks*S.school.term.pct/100)}
-function absUsed(c){let h=0;Object.entries(S.school.log).forEach(([k,v])=>{if(v!=="a")return;const [,cid,si]=k.split("|");if(cid!==c.id)return;const sl=c.slots[+si];h+=sl?sl.h:0});return h+(S.school.adj[c.id]||0)}
+function absLimit(c){return c.limitW!=null?c.limitW:Math.floor(S.school.term.weeks*S.school.term.pct/100)}
+function absWeeks(c){S.school.absW=S.school.absW||{};return S.school.absW[c.id]||[]}
+function absUsed(c){return absWeeks(c).length}
+function curWeek(){const st=S.school.term.start;if(!st)return null;const n=Math.floor(diffDays(st,today())/7)+1;return n}
 function absDates(c){return Object.entries(S.school.log).filter(([k,v])=>v==="a"&&k.split("|")[1]===c.id).map(([k])=>{const [d,,si]=k.split("|");return {d,h:(c.slots[+si]||{}).h||0}}).sort((a,b)=>a.d<b.d?1:-1)}
 function clash(c,s){return S.school.courses.some(o=>o.id!==c.id&&o.slots.some(t=>t.d===s.d&&toMin(t.s)<toMin(s.e)&&toMin(s.s)<toMin(t.e)))}
 function sessionsOn(dayIdx){const out=[];S.school.courses.forEach(c=>{const sl=c.slots.filter(s=>s.d===dayIdx).sort((a,b)=>toMin(a.s)-toMin(b.s));if(!sl.length)return;
@@ -1410,9 +1419,9 @@ function sessionsOn(dayIdx){const out=[];S.school.courses.forEach(c=>{const sl=c
 function absTone(c){const u=absUsed(c),l=absLimit(c)||1,r=u/l;return u>l?"over":r>=.8?"r":r>=.5?"a":"g"}
 let schDay=null, schEdit=null, schDel=null;
 const BK_DAYS=21;
-function gainerCard(v){const p=S.profile;const n=p.gainerScoops||2;const k=Math.round((+p.gainerKcal||0)*n),pr=r1((+p.gainerP||0)*n);
+function gainerCard(v){const p=S.profile;const n=p.gainerScoops||2;const gp=gainerPer();const k=gp.k*n,pr=r1(gp.p*n);
   const has=s=>(v.foods||[]).some(f=>f.gid===s);
-  const b=(s,l,ic)=>`<button class="gn ${has(s)?"on":""}" data-gainer="${s}" aria-pressed="${has(s)}"><span class="gn-i">${has(s)?"✓":ic}</span><span><b>${l}</b><small>${n} ölçek · ${k} kcal</small></span></button>`;
+  const b=(s,l,ic)=>`<button class="gn ${has(s)?"on":""}" data-gainer="${s}" aria-pressed="${has(s)}"><span class="gn-i">${has(s)?"✓":ic}</span><span><b>${l}</b><small>${n} kaşık · ${k} kcal</small></span></button>`;
   return `<div class="card gn-card">${hd("bolt","Gainer","b-amber",`<span class="small muted num">günde ${k*2} kcal</span>`)}
     <div class="gn-row">${b("am","Sabah","☀")}${b("pm","Akşam","☾")}</div></div>`}
 function backupNag(){if(cloud)return "";const td=today();let first=lsGet("gd:firstuse");if(!first){first=td;lsSet("gd:firstuse",td)}
@@ -1447,15 +1456,15 @@ function vSchool(){
         <div class="cls-n">${esc(x.c.name)}</div>
         <div class="small muted">${esc(x.c.code)} · ${esc(x.s.room)} · ${x.s.h} saat · ${esc(x.c.teacher)}</div>
       </div></div>`}).join("");
-  const courseCard=c=>{const u=absUsed(c),l=absLimit(c),tone=absTone(c),left=l-u;const dates=absDates(c);
+  const cw=curWeek();
+  const courseCard=c=>{const u=absUsed(c),l=absLimit(c),tone=absTone(c),left=l-u;const ws=absWeeks(c);
     return `<div class="crs ${tone}">
       <div class="crs-h"><div class="grow" style="min-width:0"><div class="crs-n">${esc(c.name)}</div><div class="small muted">${esc(c.code)} · haftada ${weekHours(c)} saat${c.up?" · üst sınıf":""}</div></div>
-        <div class="crs-c num"><b>${u}</b><span>/ ${l} saat</span></div></div>
+        <div class="crs-c num"><b>${u}</b><span>/ ${l} hafta</span></div></div>
       <div class="crs-bar"><span style="width:${Math.min(100,l?u/l*100:0)}%"></span></div>
-      <div class="crs-f"><span class="crs-left">${left<0?Math.abs(left)+" saat sınırı aştın":left===0?"Hakkın doldu":left+" saat hakkın kaldı"}</span>
-        <span class="grow"></span><button class="stp" data-adj="${c.id}" data-v="-1" aria-label="${esc(c.name)} devamsızlığı 1 saat azalt">−</button><button class="stp" data-adj="${c.id}" data-v="1" aria-label="${esc(c.name)} devamsızlığı 1 saat artır">+</button></div>
-      ${dates.length?`<div class="crs-d">${dates.slice(0,6).map(x=>`<span class="tag num">${fmtD(x.d)} · ${x.h}s</span>`).join("")}${dates.length>6?`<span class="tag">+${dates.length-6}</span>`:""}</div>`:""}
-      ${schEdit===c.id?`<form class="crs-ed" id="f-lim" data-cid="${c.id}" novalidate><label class="f">Devamsızlık sınırı (saat)<input id="lim-h" type="number" inputmode="numeric" min="0" value="${l}"></label><div class="row"><button class="btn sm primary">Kaydet</button><button type="button" class="btn sm ghost" data-limreset="${c.id}">Varsayılana dön</button></div></form>`
+      <div class="crs-left">${left<0?Math.abs(left)+" hafta sınırı aştın":left===0?"Devamsızlık hakkın doldu":left+" hafta hakkın kaldı"}</div>
+      <div class="wk-grid">${Array.from({length:S.school.term.weeks},(_,i)=>i+1).map(n=>{const on=ws.includes(n),fut=cw!=null&&n>cw;return `<button class="wk ${on?"on":""} ${cw===n?"cur":""}" data-absw="${c.id}:${n}" ${fut?"disabled":""} aria-pressed="${on}" aria-label="${n}. hafta ${on?"gelmedim":"geldim"}">${n}</button>`}).join("")}</div>
+      ${schEdit===c.id?`<form class="crs-ed" id="f-lim" data-cid="${c.id}" novalidate><label class="f">Devamsızlık sınırı (hafta)<input id="lim-h" type="number" inputmode="numeric" min="0" value="${l}"></label><div class="row"><button class="btn sm primary">Kaydet</button><button type="button" class="btn sm ghost" data-limreset="${c.id}">Varsayılana dön</button></div></form>`
         :`<div class="row"><button class="link muted" data-limed="${c.id}">Sınırı düzenle</button>${schDel===c.id?`<button class="link" data-cdelyes="${c.id}">Listeden çıkarmayı onayla</button><button class="link muted" data-cdelno="1">Vazgeç</button>`:`<button class="link muted" data-cdel="${c.id}">Listeden çıkar</button>`}</div>`}
     </div>`};
   return `<div class="row between"><h2>Dersler</h2><span class="pill">${esc(S.school.term.name)}</span></div>
@@ -1476,14 +1485,15 @@ function vSchool(){
   ${(()=>{const cl=S.school.courses.filter(c=>c.slots.some(s=>clash(c,s)));return cl.length?`<div class="hint up">${ico("bolt")}<span>Saat çakışması: ${cl.map(c=>esc(c.name)).join(", ")}. Hangisine gideceğini seçmen gerekebilir; gitmediğin dersi istersen listeden çıkar.</span></div>`:""})()}
   <div class="card">
     ${hd("shield","Devamsızlık","b-red",risky.length?`<span class="pill due">${risky.length} derste dikkat</span>`:`<span class="small muted">${S.school.courses.length} ders · haftada ${tot} saat</span>`)}
-    <div class="small muted">Gitmediğin her ders saati için + bas; yanlışlıkla eklediysen − ile geri al.</div>
+    <div class="small muted">Gitmediğin haftanın numarasına dokun, kırmızı olur; tekrar dokununca geri alınır.${cw?` Şu an <b>${cw}. haftadasın</b> (çerçeveli).`:""}</div>
     <div class="crs-list">${S.school.courses.map(courseCard).join("")}</div>
-    <details class="sch-set"><summary class="small">Sınır hesabı: ${S.school.term.weeks} hafta × %${S.school.term.pct}</summary>
+    <details class="sch-set"><summary class="small">Dönem ayarları: ${S.school.term.weeks} hafta × %${S.school.term.pct} = ${absLimit({})} hafta hak${S.school.term.start?"":" · başlangıç tarihi seçilmedi"}</summary>
       <form class="stack" id="f-term" style="margin-top:10px" novalidate><div class="grid2">
         <label class="f">Dönem kaç hafta<input id="tm-w" type="number" inputmode="numeric" min="1" max="20" value="${S.school.term.weeks}"></label>
         <label class="f">Devamsızlık hakkı (%)<input id="tm-p" type="number" inputmode="numeric" min="0" max="100" value="${S.school.term.pct}"></label></div>
+        <label class="f">Dönemin ilk günü (1. haftanın pazartesisi)<input id="tm-s" type="date" value="${S.school.term.start||""}"></label>
         <button class="btn">Kaydet</button>
-        <div class="small muted">Her dersin sınırı = haftalık saat × hafta × yüzde (aşağı yuvarlanır). Üniversitenin yönetmeliğine ya da hocanın söylediğine göre değiştir; teorik ve laboratuvar dersleri için oran farklı olabilir.</div></form>
+        <div class="small muted">Her dersin sınırı = hafta × yüzde (aşağı yuvarlanır). Başlangıç tarihini girersen hangi haftada olduğun işaretlenir. Üniversitenin yönetmeliğine ya da hocanın söylediğine göre değiştir; teorik ve laboratuvar dersleri için oran farklı olabilir.</div></form>
     </details>
   </div>`;
 }
@@ -1687,9 +1697,10 @@ function vSettings(){
     <div class="grid2">
       <label class="f">Hedef kilo (kg)<input id="p-tkg" type="number" inputmode="decimal" step="0.5" value="${p.targetKg??""}" placeholder="ör. 65"></label>
       <label class="f">Su hedefi (ml)<input id="p-water" type="number" inputmode="numeric" step="250" value="${p.waterGoal}"></label>
-      <label class="f">Gainer ölçek kcal<input id="p-gk" type="number" inputmode="numeric" value="${p.gainerKcal}"></label>
-      <label class="f">Gainer ölçek protein (g)<input id="p-gp" type="number" inputmode="decimal" value="${p.gainerP}"></label>
-      <label class="f">Öğün başına ölçek<input id="p-gs" type="number" inputmode="numeric" min="1" max="4" value="${p.gainerScoops||2}"></label>
+      <label class="f">Gainer 1 kaşık (g)<input id="p-gg" type="number" inputmode="numeric" min="1" value="${p.gainerG||50}"></label>
+      <label class="f">Öğün başına kaşık<input id="p-gs" type="number" inputmode="numeric" min="1" max="6" value="${p.gainerScoops||2}"></label>
+      <label class="f">Gainer 100 g kcal<input id="p-gk" type="number" inputmode="numeric" value="${p.gainerK100||378}"></label>
+      <label class="f">Gainer 100 g protein (g)<input id="p-gp" type="number" inputmode="decimal" value="${p.gainerP100||10}"></label>
     </div>
     <label class="f">Sağlık notları (yalnızca koç yorumlarında kullanılır)<textarea id="p-notes" placeholder="Örn: tanın, geçirdiğin operasyonlar, doktorunun spor için söyledikleri">${esc(p.healthNotes)}</textarea></label>
     <button class="btn primary">Profili kaydet</button>
@@ -1792,14 +1803,16 @@ document.addEventListener("click",async ev=>{
   if(ds.ldel){const e=S.lifts.ex[liftSel];if(e){e.rows.splice(+ds.ldel,1);mark("lifts");render()}return}
   if(ds.bksnooze){lsSet("gd:bksnooze",addDays(today(),3));render();toast("3 gün sonra tekrar hatırlatılacak");return}
   if(ds.gainer){const d=today(),x=day(d),p=S.profile,n=p.gainerScoops||2;const i=x.foods.findIndex(f=>f.gid===ds.gainer);
-    if(i>=0){x.foods.splice(i,1);toast("Gainer çıkarıldı")}else{x.foods.push({id:uid(),gid:ds.gainer,n:"Gainer ("+(ds.gainer==="am"?"sabah":"akşam")+", "+n+" ölçek)",kcal:Math.round((+p.gainerKcal||0)*n),p:r1((+p.gainerP||0)*n)});toast("Gainer eklendi · +"+Math.round((+p.gainerKcal||0)*n)+" kcal")}
+    if(i>=0){x.foods.splice(i,1);toast("Gainer çıkarıldı")}else{const gp=gainerPer();x.foods.push({id:uid(),gid:ds.gainer,n:"Gainer ("+(ds.gainer==="am"?"sabah":"akşam")+", "+n+" kaşık)",kcal:gp.k*n,p:r1(gp.p*n)});toast("Gainer eklendi · +"+gp.k*n+" kcal")}
     touchDay(d);render();return}
   if(ds.sday2!==undefined){schDay=+ds.sday2;render();return}
   if(ds.att){const k=ds.att;S.school.log[k]=S.school.log[k]===ds.v?undefined:ds.v;if(!S.school.log[k])delete S.school.log[k];mark("school");
     if(ds.v==="a"&&S.school.log[k]==="a"){const c=S.school.courses.find(c=>c.id===k.split("|")[1]);if(c){const l=absLimit(c)-absUsed(c);toast(c.name+": "+(l<0?"sınır "+Math.abs(l)+" saat aşıldı":l+" saat hakkın kaldı"))}}render();return}
+  if(ds.absw){const [cid,n]=ds.absw.split(":");S.school.absW=S.school.absW||{};const arr=(S.school.absW[cid]||[]).slice();const k=+n;const i=arr.indexOf(k);if(i>=0)arr.splice(i,1);else arr.push(k);arr.sort((a,b)=>a-b);S.school.absW[cid]=arr;mark("school");
+    if(i<0){const c=S.school.courses.find(x=>x.id===cid);if(c){const l=absLimit(c)-absUsed(c);toast(c.name+": "+(l<0?"sınır "+Math.abs(l)+" hafta aşıldı":l+" hafta hakkın kaldı"))}}render();return}
   if(ds.adj){const c=S.school.courses.find(c=>c.id===ds.adj);if(c){const cur=S.school.adj[c.id]||0;const nv=cur+(+ds.v);if(absUsed(c)+(+ds.v)<0)return;S.school.adj[c.id]=nv;mark("school");render()}return}
   if(ds.limed){schEdit=ds.limed;render();return}
-  if(ds.limreset){const c=S.school.courses.find(c=>c.id===ds.limreset);if(c){delete c.limitH;mark("school")}schEdit=null;render();return}
+  if(ds.limreset){const c=S.school.courses.find(c=>c.id===ds.limreset);if(c){delete c.limitW;mark("school")}schEdit=null;render();return}
   if(ds.cdel){schDel=ds.cdel;render();return}
   if(ds.cdelno){schDel=null;render();return}
   if(ds.cdelyes){S.school.courses=S.school.courses.filter(c=>c.id!==ds.cdelyes);schDel=null;mark("school");toast("Ders listeden çıkarıldı");render();return}
@@ -1900,9 +1913,9 @@ document.addEventListener("submit",async ev=>{
     return}
   if(f.id==="f-chat"){const v=$("#in-chat").value.trim();if(v)sendChat(v);return}
   if(f.id==="f-profile"){const p=S.profile;p.name=$("#p-name").value.trim();p.age=+$("#p-age").value||null;p.heightCm=+$("#p-h").value||176;p.sex=$("#p-sex").value;p.goal=$("#p-goal").value;
-    p.waterGoal=Math.max(500,+$("#p-water").value||3000);p.gainerKcal=+$("#p-gk").value||0;p.gainerP=+$("#p-gp").value||0;p.gainerScoops=Math.max(1,Math.min(4,parseInt($("#p-gs").value,10)||2));p.healthNotes=$("#p-notes").value.slice(0,2000);{const tk=parseFloat(($("#p-tkg").value||"").replace(",","."));p.targetKg=tk>30&&tk<200?r1(tk):null}mark("profile");toast("Profil kaydedildi");return}
-  if(f.id==="f-lim"){const c=S.school.courses.find(c=>c.id===f.dataset.cid);const n=parseInt($("#lim-h").value,10);if(c&&n>=0){c.limitH=n;mark("school")}schEdit=null;render();return}
-  if(f.id==="f-term"){const w=parseInt($("#tm-w").value,10),p=parseInt($("#tm-p").value,10);if(w>0&&w<=20)S.school.term.weeks=w;if(p>=0&&p<=100)S.school.term.pct=p;mark("school");toast("Kaydedildi");render();return}
+    p.waterGoal=Math.max(500,+$("#p-water").value||3000);p.gainerG=Math.max(1,+$("#p-gg").value||50);p.gainerK100=+$("#p-gk").value||378;p.gainerP100=+$("#p-gp").value||10;p.gainerScoops=Math.max(1,Math.min(6,parseInt($("#p-gs").value,10)||2));p.healthNotes=$("#p-notes").value.slice(0,2000);{const tk=parseFloat(($("#p-tkg").value||"").replace(",","."));p.targetKg=tk>30&&tk<200?r1(tk):null}mark("profile");toast("Profil kaydedildi");return}
+  if(f.id==="f-lim"){const c=S.school.courses.find(c=>c.id===f.dataset.cid);const n=parseInt($("#lim-h").value,10);if(c&&n>=0){c.limitW=n;mark("school")}schEdit=null;render();return}
+  if(f.id==="f-term"){const w=parseInt($("#tm-w").value,10),p=parseInt($("#tm-p").value,10);S.school.term.start=$("#tm-s").value||null;if(w>0&&w<=20)S.school.term.weeks=w;if(p>=0&&p<=100)S.school.term.pct=p;mark("school");toast("Kaydedildi");render();return}
   if(f.id==="f-watch"){const fw=findWorkout(f.dataset.wid);if(!fw){watchAsk=null;render();return}
     const num=(id,lo,hi)=>{const n=parseInt($(id).value,10);return n>=lo&&n<=hi?n:null};
     const a={kcal:num("#aw-kcal",1,3000),min:num("#aw-min",1,400),avg:num("#aw-avg",30,230),max:num("#aw-max",30,240),src:"manual"};
@@ -1950,7 +1963,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&sheetOpen)closeShee
 })();
 
 /* yeni sürüm kontrolü (bağımsız sürüm) */
-const APP_V="2026.09.30-0117";
+const APP_V="2026.09.30-0121";
 async function checkUpdate(manual){if(inViewer()||APP_V.startsWith("__"))return;
   try{const r=await fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"});const t=await r.text();const m=t.match(/const APP_V="([^"]+)"/);
     if(m&&m[1]!==APP_V){const el=$("#upd");el.innerHTML=`<span class="grow">Yeni sürüm hazır</span><button class="btn sm" id="btn-upd">Güncelle</button>`;el.hidden=false;el.dataset.v=m[1]}
