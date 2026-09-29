@@ -577,6 +577,15 @@ body.noscroll{overflow:hidden}
 .crs .row .link{padding:2px 0}
 .crs-ed{display:flex;flex-direction:column;gap:8px}
 .sch-set summary{margin-top:4px}
+.cls-strip{display:flex;align-items:center;gap:12px;width:100%;border:0;background:var(--surface);color:var(--fg);border-radius:18px;padding:12px 14px;box-shadow:var(--shadow);cursor:pointer;text-align:left;font:inherit}
+.cls-strip b{font-size:14.5px}
+.cls-strip .badge svg{width:18px;height:18px}
+.cls-strip.live{box-shadow:var(--shadow),inset 0 0 0 2px var(--sch-1)}
+.cs-chev{font-size:22px;color:var(--muted);line-height:1}
+#btn-dl,.file-btn{display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}
+#btn-dl svg,.file-btn svg{width:18px;height:18px}
+.file-btn:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+#restore-confirm{gap:8px}
 #view>*{animation:rise .35s ease both}
 @keyframes rise{from{transform:translateY(6px)}to{transform:none}}
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
@@ -937,10 +946,12 @@ async function aiCall(turns,{json=false,images=null}={}){
     }catch(e){throw new Error(inViewer()?"Bu sayfa güvenlik gereği Gemini'ye bağlanamıyor. Ayarlar'dan Claude'u seç ya da Gemini için bağımsız sürümü kullan.":"Gemini'ye bağlanılamadı. İnternet bağlantını kontrol et.")}
     return {res,data:await res.json().catch(()=>({}))}};
   let {res,data}=await call(model0);let model=model0;
-  const modelIssue=r=>r.status===404||(r.status===403&&!/API key/i.test((data.error&&data.error.message)||""))||(r.status===429&&/limit: 0|free/i.test((data.error&&data.error.message)||""));
+  const busy=r=>r.status===503||r.status===500||/high demand|overloaded|UNAVAILABLE/i.test((data.error&&(data.error.message+" "+data.error.status))||"");
+  if(!res.ok&&busy(res)){await new Promise(r=>setTimeout(r,1500));const r1=await call(model0);res=r1.res;data=r1.data}
+  const modelIssue=r=>busy(r)||r.status===404||(r.status===403&&!/API key/i.test((data.error&&data.error.message)||""))||(r.status===429&&/limit: 0|free/i.test((data.error&&data.error.message)||""));
   if(!res.ok&&modelIssue(res)){const alt=GEMINI_MODELS.find(m=>m!==model0);if(alt){const r2=await call(alt);if(r2.res.ok){res=r2.res;data=r2.data;model=alt;S.profile.geminiModel=alt;mark("profile")}}}
   if(!res.ok){const m=data&&data.error&&data.error.message||("HTTP "+res.status);
-    throw new Error(res.status===400&&/API key/i.test(m)?"API anahtarı geçersiz. Ayarlar'dan kontrol et.":res.status===404?"Model bulunamadı ("+model+"). Ayarlar'da listeden başka bir model seç.":res.status===429?"Gemini kotası doldu, biraz sonra tekrar dene.":res.status===403?"Bu anahtarın bu modele erişimi yok ("+model+"). Listeden başka model seç.":"Gemini hatası: "+m)}
+    throw new Error(res.status===400&&/API key/i.test(m)?"API anahtarı geçersiz. Ayarlar'dan kontrol et.":res.status===404?"Model bulunamadı ("+model+"). Ayarlar'da listeden başka bir model seç.":busy(res)?"Gemini şu an çok yoğun. Birkaç dakika sonra tekrar dene.":res.status===429?"Gemini kotası doldu, biraz sonra tekrar dene.":res.status===403?"Bu anahtarın bu modele erişimi yok ("+model+"). Listeden başka model seç.":"Gemini hatası: "+m)}
   const text=((data.candidates||[])[0]?.content?.parts||[]).map(p=>p.text||"").join("");
   if(!text) throw new Error("Gemini boş yanıt döndü.");
   if(json){try{return JSON.parse(text.replace(/^```(json)?|```$/g,"").trim())}catch(e){throw new Error("Yanıt okunamadı, tekrar dene.")}}
@@ -1117,6 +1128,7 @@ function vToday(){
     <div class="dots">${wk.map((x,i)=>`<span class="${x.on?"on":sched()[i]?"plan":"rest"} ${x.today?"today":""}" title="${fmtD(x.d)} · ${sched()[i]?"idman":"dinlenme"}">${"PSÇPCCP"[i]}</span>`).join("")}</div>
   </div>
 
+  ${todayClassStrip()}
   <div class="card goals">
     <div class="g-head"><div style="min-width:0"><div class="g-eyebrow">Bugünün hedefleri</div><div class="g-title">${goalHeadline(kcal,prot,v.water,t,p)}</div></div><button class="btn sm ghost" data-go="food">+ Yemek</button></div>
     <div class="g-body">
@@ -1174,6 +1186,8 @@ const I2={
   heart:'<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
   edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/>',
   check:'<path d="M5 12l5 5 9-10"/>',
+  download:'<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
+  upload:'<path d="M12 20V9M7 14l5-5 5 5M5 4h14"/>',
   trophy:'<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/>'
 };
 const ico=n=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I2[n]}</svg>`;
@@ -1354,6 +1368,16 @@ function sessionsOn(dayIdx){const out=[];S.school.courses.forEach(c=>{const sl=c
   const rooms=[...new Set(sl.map(s=>s.room))];out.push({c,i:0,s:{d:dayIdx,s:sl[0].s,e:sl[sl.length-1].e,h:sl.reduce((a,s)=>a+s.h,0),room:rooms.join(", ")}})});return out.sort((a,b)=>toMin(a.s.s)-toMin(b.s.s))}
 function absTone(c){const u=absUsed(c),l=absLimit(c)||1,r=u/l;return u>l?"over":r>=.8?"r":r>=.5?"a":"g"}
 let schDay=null, schEdit=null, schDel=null;
+function nextClassDay(fromIdx){for(let i=1;i<=7;i++){const di=(fromIdx+i)%7;const l=sessionsOn(di);if(l.length)return {di,i,x:l[0]}}return null}
+function todayClassStrip(){if(!S.school||!S.school.courses.length)return "";const td=today(),di=wd(td);const now=new Date(),nm=now.getHours()*60+now.getMinutes();
+  const list=di<7?sessionsOn(di):[];const cur=list.find(x=>nm>=toMin(x.s.s)&&nm<toMin(x.s.e));const nxt=list.find(x=>toMin(x.s.s)>nm);
+  const nd=nextClassDay(di);const ndTxt=nd?(nd.i===1?"Yarın":GUN_U[nd.di])+" "+nd.x.s.s+" · "+esc(nd.x.c.name):"";
+  let t,sub,live=false;
+  if(cur){live=true;t="Şimdi: "+esc(cur.c.name);sub=esc(cur.s.room)+(nxt?" · sonra "+nxt.s.s+" "+esc(nxt.c.name):" · bugünün son dersi")}
+  else if(nxt){const m=toMin(nxt.s.s)-nm;t=nxt.s.s+" · "+esc(nxt.c.name);sub=esc(nxt.s.room)+" · "+(m<60?m+" dk sonra":Math.floor(m/60)+" sa "+(m%60)+" dk sonra")+(list.length>1?" · bugün "+list.length+" ders":"")}
+  else if(list.length){t="Bugünkü dersler bitti";sub=nd?"Sıradaki: "+ndTxt:""}
+  else{t="Bugün ders yok";sub=nd?"Sıradaki: "+ndTxt:""}
+  return `<button class="cls-strip ${live?"live":""}" data-go="school" aria-label="Dersler: ${t.replace(/<[^>]+>/g,"")}"><span class="badge b-blue">${IC.school}</span><span class="grow" style="min-width:0"><b class="clip" style="display:block">${t}</b>${sub?`<span class="small muted clip" style="display:block">${sub}</span>`:""}</span><span class="cs-chev" aria-hidden="true">›</span></button>`}
 function vSchool(){
   const td=today(),tdIdx=wd(td);if(schDay==null)schDay=tdIdx<5?tdIdx:0;
   const date=addDays(td,schDay-tdIdx);const isToday=date===td;const past=date<=td;
@@ -1644,12 +1668,29 @@ function vSettings(){
   <div class="card">
     ${hd("db","Veri ve yedek","b-blue")}
     <div class="status ${cloud?"cloud":""}" id="status"></div>
-    <div class="row"><button class="btn ghost grow" id="btn-export">Yedeği göster</button><button class="btn ghost grow" id="btn-import">Yedeği geri yükle</button></div>
+    <button class="btn primary" id="btn-dl">${ico("download")}Yedek dosyasını indir</button>
+    <label class="btn ghost file-btn">${ico("upload")}Yedek dosyasından geri yükle<input type="file" id="in-restore" accept=".json,application/json" hidden></label>
+    <div id="restore-confirm" class="card soft-red" hidden></div>
+    <div class="small muted" id="bk-last">${(()=>{const l=lsGet("gd:lastbackup");if(!l)return "Henüz yedek dosyası indirmedin.";const n=diffDays(l,today());return "Son yedek: "+(n===0?"bugün":n+" gün önce")+(n>=14?" · yeni bir yedek almanın zamanı geldi":"")})()}</div>
+    <details><summary class="small">Metin olarak kopyala / yapıştır</summary>
+    <div class="row" style="margin-top:8px"><button class="btn ghost grow" id="btn-export">Yedeği göster</button><button class="btn ghost grow" id="btn-import">Yedeği geri yükle</button></div></details>
     <textarea id="io" hidden aria-label="Yedek verisi"></textarea>
     <div class="row" id="io-actions" hidden><button class="btn" id="btn-copy">Kopyala</button><button class="btn primary" id="btn-import-go">İçe aktar</button></div>
   </div>`;
 }
 
+function backupData(){return {app:"guc-defteri",v:2,savedAt:new Date().toISOString(),profile:S.profile,months:S.months,lifts:S.lifts,school:S.school,chat:S.chat}}
+function restoreFrom(o){if(!o||!o.profile||!o.months)throw new Error("bad");S.profile=Object.assign({},DEF_PROFILE,o.profile);S.profile.place="gym";S.months=o.months;
+  if(o.lifts&&o.lifts.ex){S.lifts=o.lifts;mark("lifts")}if(o.school&&o.school.courses){S.school=migrateSchool(o.school);delete S.school._mig;mark("school")}if(o.chat&&Array.isArray(o.chat.msgs)){S.chat=o.chat;mark("chat")}
+  mark("profile");Object.keys(S.months).forEach(mark);toast("Yedek yüklendi");render()}
+let pendingRestore=null;
+async function downloadBackup(){const name="guc-defteri-yedek-"+today()+".json";const txt=JSON.stringify(backupData());const blob=new Blob([txt],{type:"application/json"});
+  const done=()=>{lsSet("gd:lastbackup",today());toast("Yedek dosyası indirildi");const l=$("#bk-last");if(l)l.textContent="Son yedek: bugün"};
+  if(inViewer()){let dl=null;try{dl=await window.claude.use("downloads")}catch(e){}
+    if(!dl){toast("Bu görünümde dosya indirilemiyor. Metin olarak kopyala seçeneğini kullan.");return}
+    try{const r=await dl.save({filename:name,data:blob});if(r&&r.status==="saved")done()}catch(e){if(e&&e.code!=="cancelled"&&e.code!=="declined")toast("Yedek indirilemedi. Metin olarak kopyala seçeneğini kullan.")}return}
+  try{const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);done()}
+  catch(e){toast("Yedek indirilemedi. Metin olarak kopyala seçeneğini kullan.")}}
 function renderStatus(){const el=$("#status");if(!el)return;el.className="status "+(cloud?"cloud":"");
   el.innerHTML=cloud?"<i></i>Veriler hesabında saklanıyor, bu sayfayı açtığın her cihazda aynı.":"<i></i>Veriler bu cihazın tarayıcısında saklanıyor. Düzenli yedek al."}
 
@@ -1740,10 +1781,13 @@ document.addEventListener("click",async ev=>{
     const prevP=S.profile.aiProvider;S.profile.aiProvider="gemini";const msg=$("#g-msg");msg.textContent="Deneniyor…";
     try{const t=await aiCall([{r:"u",t:"Tek kelimeyle 'Hazır' yaz."}]);msg.textContent="Bağlantı çalışıyor: "+t.trim().slice(0,40)}catch(e){msg.textContent=e.message;S.profile.aiProvider=prevP}
     render();return}
-  if(b.id==="btn-export"){const io=$("#io");io.hidden=false;$("#io-actions").hidden=false;io.value=JSON.stringify({v:1,profile:S.profile,months:S.months,lifts:S.lifts,school:S.school},null,0);return}
+  if(b.id==="btn-export"){const io=$("#io");io.hidden=false;$("#io-actions").hidden=false;io.value=JSON.stringify(backupData(),null,0);return}
   if(b.id==="btn-import"){const io=$("#io");io.hidden=false;$("#io-actions").hidden=false;io.value="";io.placeholder="Yedek metnini buraya yapıştır";io.focus();return}
   if(b.id==="btn-copy"){const io=$("#io");try{await navigator.clipboard.writeText(io.value);toast("Kopyalandı")}catch(e){io.select();toast("Metni seçip kopyala")}return}
-  if(b.id==="btn-import-go"){try{const o=JSON.parse($("#io").value);if(!o.profile||!o.months)throw 0;S.profile=Object.assign({},DEF_PROFILE,o.profile);S.months=o.months;if(o.lifts&&o.lifts.ex){S.lifts=o.lifts;mark("lifts")}if(o.school&&o.school.courses){S.school=o.school;mark("school")}mark("profile");Object.keys(S.months).forEach(mark);toast("Yedek yüklendi");render()}catch(e){toast("Yedek metni okunamadı")}return}
+  if(b.id==="btn-import-go"){try{restoreFrom(JSON.parse($("#io").value))}catch(e){toast("Yedek metni okunamadı")}return}
+  if(b.id==="btn-dl"){downloadBackup();return}
+  if(b.id==="btn-restore-yes"){if(pendingRestore){restoreFrom(pendingRestore);pendingRestore=null}return}
+  if(b.id==="btn-restore-no"){pendingRestore=null;const c=$("#restore-confirm");if(c)c.hidden=true;return}
 });
 document.addEventListener("input",ev=>{
   const t=ev.target;
@@ -1756,6 +1800,10 @@ document.addEventListener("input",ev=>{
   if(t.id==="m2-end"){const st=$("#m2-start").value,en=t.value;if(st&&en&&en>=st)$("#m2-days").value=diffDays(st,en)+1;medFormSummary()}
 });
 document.addEventListener("change",async ev=>{const t=ev.target;
+  if(t.id==="in-restore"&&t.files&&t.files[0]){const f=t.files[0];t.value="";const c=$("#restore-confirm");
+    try{const o=JSON.parse(await f.text());if(!o.profile||!o.months)throw 0;pendingRestore=o;const days=Object.values(o.months).reduce((a,m)=>a+Object.keys(m.days||{}).length,0);
+      c.innerHTML=`<b>Bu yedek yüklensin mi?</b><div class="small">${o.savedAt?"Yedek tarihi: "+fmtDY(o.savedAt.slice(0,10))+" · ":""}${days} günlük kayıt${o.profile.weights?", "+o.profile.weights.length+" tartı":""}. Bu cihazdaki şu anki verilerin yerine geçecek.</div><div class="row"><button class="btn primary" id="btn-restore-yes">Yükle</button><button class="btn ghost" id="btn-restore-no">Vazgeç</button></div>`;c.hidden=false}
+    catch(e){toast("Bu dosya bir Güç Defteri yedeği değil")}return}
   if(t.id==="lf-start"){S.lifts.start=t.value||null;mark("lifts");render();return}
   if((t.id==="in-cam"||t.id==="in-gal")&&t.files&&t.files[0]){const f=t.files[0];
     try{setPhoto(await shrinkImage(f));aiFoodPreview=null;render()}catch(e){const el=$("#ai-food-err");if(el)el.textContent=e.message}return}
