@@ -877,25 +877,27 @@ function targets(){
 }
 function bmi(kg){const h=(S.profile.heightCm||176)/100;return kg/(h*h)}
 /* ---------- ilaç takibi ---------- */
-function medInfo(m){const td=today();const o={type:m.type,start:m.start||null,dur:m.durDays||null};
+function medInfo(m){const td=today();const o={type:m.type,start:m.start||null,dur:null};
   if(o.start){o.started=o.start<=td;o.startsIn=o.started?0:diffDays(td,o.start);o.dayNo=o.started?diffDays(o.start,td)+1:0}
   if(o.start&&o.dur){o.end=addDays(o.start,o.dur-1);o.left=diffDays(td,o.end);o.finished=o.left<0;o.pct=Math.max(0,Math.min(1,o.dayNo/o.dur))}
   if(m.type==="daily"){const t=dayRO(td);o.takenToday=!!(t&&t.meds&&t.meds[m.id]);let st=0,d=o.takenToday?td:addDays(td,-1);
     for(let i=0;i<400;i++){const v=dayRO(d);if(v&&v.meds&&v.meds[m.id]){st++;d=addDays(d,-1)}else break}o.streak=st;
     let tk=0;if(o.start){const lim=Math.min(o.dayNo||0,400);for(let i=0;i<lim;i++){const v=dayRO(addDays(td,-i));if(v&&v.meds&&v.meds[m.id])tk++}o.takenCount=tk}}
-  else{const ev=m.everyDays||21;o.every=ev;if(m.lastDate){o.last=m.lastDate;o.since=diffDays(m.lastDate,td);o.next=addDays(m.lastDate,ev);o.until=diffDays(td,o.next);o.cycle=Math.max(0,Math.min(1,o.since/ev))}
+  else{const ev=m.everyDays||21;o.every=ev;let anc=m.lastDate||null;
+    if(!anc&&m.start){if(m.start>=td)anc=addDays(m.start,-ev);else{const k=Math.floor(diffDays(m.start,td)/ev);anc=addDays(m.start,k*ev);if(anc===td)anc=addDays(anc,-ev)}}
+    if(anc){o.last=anc;o.since=diffDays(anc,td);o.next=addDays(anc,ev);o.until=diffDays(td,o.next);o.cycle=Math.max(0,Math.min(1,o.since/ev))}
     o.doses=(m.shots||[]).length}
   o.due=!o.finished&&(m.type==="daily"?!o.takenToday:(o.until==null||o.until<=0));
   return o}
 function medStatus(m){const i=medInfo(m);if(m.type==="daily")return {due:!i.takenToday,text:i.takenToday?"Bugün alındı":"Bugün alınacak",done:i.takenToday};
-  if(!i.last)return {due:true,text:"Son tarih girilmedi"};if(i.until<0)return {due:true,text:Math.abs(i.until)+" gün gecikti ("+fmtD(i.next)+")",next:i.next};
+  if(!i.last)return {due:true,text:"Başlangıç tarihi girilmedi"};if(i.until<0)return {due:true,text:Math.abs(i.until)+" gün gecikti ("+fmtD(i.next)+")",next:i.next};
   if(i.until===0)return {due:true,text:"Bugün ("+fmtD(i.next)+")",next:i.next};return {due:i.until<=2,text:fmtD(i.next)+" · "+i.until+" gün kaldı",next:i.next}}
 const fmtDY=d=>{const x=parseD(d);return x.getDate()+" "+AYLAR[x.getMonth()]+(x.getFullYear()!==new Date().getFullYear()?" "+x.getFullYear():"")};
 function gunStr(n){return n.toLocaleString("tr-TR")+" gün"}
 function medLine(m,i){
   if(i.start&&!i.started)return fmtDY(i.start)+"'de başlıyor · "+i.startsIn+" gün sonra";
   if(i.finished)return "Tamamlandı · "+fmtDY(i.end);
-  if(m.type==="interval"){if(!i.last)return "Son doz tarihi girilmedi";return i.until<0?Math.abs(i.until)+" gün gecikti":i.until===0?"Bugün yapılmalı":"Sonraki "+fmtD(i.next)+" · "+i.until+" gün kaldı"}
+  if(m.type==="interval"){if(!i.last)return "Başlangıç tarihi girilmedi";return i.until<0?Math.abs(i.until)+" gün gecikti":i.until===0?"Bugün yapılmalı":"Sonraki "+fmtD(i.next)+" · "+i.until+" gün kaldı"}
   if(i.dur)return i.dayNo+". gün / "+i.dur+" · "+(i.left===0?"son gün":i.left+" gün kaldı");
   return i.start?gunStr(i.dayNo)+"dür kullanıyorsun":"Her gün"+(m.time?" · "+m.time:"")}
 function medRing(pct,big,small,tone){const C=2*Math.PI*30;return `<div class="md-ring"><svg viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="36" r="30" class="mr-t ${tone}"/><circle cx="36" cy="36" r="30" class="mr-v ${tone}" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C*(1-pct)).toFixed(1)}"/></svg><div><b class="num">${big}</b><span>${small}</span></div></div>`}
@@ -909,9 +911,7 @@ function vMeds(){
     const isInt=m.type==="interval";const tone=i.finished?"n":isInt?(i.until!=null&&i.until<=0?"r":"v"):"g";
     let ring="",facts=[];
     if(isInt){ring=i.last?medRing(i.cycle,i.until<0?"+"+Math.abs(i.until):i.until,i.until<0?"gün gecikti":i.until===0?"bugün":"gün kaldı",tone):medRing(0,"?","tarih yok","n");
-      facts=[["Son doz",i.last?fmtDY(i.last):"—"],["Geçen",i.last?gunStr(i.since):"—"],["Sonraki",i.next?fmtDY(i.next):"—"],["Sıklık",i.every+" günde bir"]];
-      if(i.dur)facts.push(["Tedavi bitişi",fmtDY(i.end)+(i.left>=0?" · "+i.left+" gün kaldı":"")]);
-      if(i.start)facts.push(["Başlangıç",fmtDY(i.start)+(i.started?" · "+gunStr(i.dayNo)+" önce":"")]);}
+      facts=[["Sonraki",i.next?fmtDY(i.next):"—"],["Geçen",i.last?gunStr(i.since):"—"],["Sıklık",i.every+" günde bir"],["Süre","Sürekli"]];}
     else if(i.dur&&i.started){ring=medRing(i.pct,i.dayNo,"/ "+i.dur+" gün",tone);
       facts=[["Başlangıç",fmtDY(i.start)],["Geçen",gunStr(i.dayNo)],["Kalan",i.finished?"—":gunStr(Math.max(0,i.left))],["Bitiş",fmtDY(i.end)]];}
     else if(i.start&&i.started){ring=medRing(1,i.dayNo.toLocaleString("tr-TR"),"gündür",tone);
@@ -921,31 +921,23 @@ function vMeds(){
     const action=i.finished?`<span class="pill">Tamamlandı</span>`:isInt?`<button class="btn sm ${i.due?"primary":"ghost"}" data-shot="${m.id}">Bugün yapıldı</button>`
       :(i.start&&!i.started)?"":`<button class="md-take ${i.takenToday?"on":""}" data-med="${m.id}">${i.takenToday?"✓ Bugün alındı":"Bugün aldım"}</button>`;
     return `<div class="md-card ${tone} ${i.finished?"fin":""}">
-      <div class="md-top">${ring}<div class="md-h"><div class="md-n">${esc(m.name)}</div><div class="md-tags"><span class="tag">${isInt?i.every+" günde bir":"Her gün"}</span>${m.time?`<span class="tag">${esc(m.time)}</span>`:""}${i.dur?`<span class="tag">${i.dur} günlük</span>`:`<span class="tag">Sürekli</span>`}</div><div class="md-line">${esc(medLine(m,i))}</div></div></div>
+      <div class="md-top">${ring}<div class="md-h"><div class="md-n">${esc(m.name)}</div><div class="md-tags"><span class="tag">${isInt?i.every+" günde bir":"Her gün"}</span>${m.time?`<span class="tag">${esc(m.time)}</span>`:""}<span class="tag">Sürekli</span></div><div class="md-line">${esc(medLine(m,i))}</div></div></div>
       ${i.dur&&i.started&&!i.finished?`<div class="md-course"><div class="bar ${tone==="g"?"g":""}"><span style="width:${(i.pct*100).toFixed(0)}%"></span></div><div class="md-ends num"><span>${fmtD(i.start)}</span><span>%${Math.round(i.pct*100)}</span><span>${fmtD(i.end)}</span></div></div>`:""}
       <div class="md-facts">${facts.map(f=>`<div><span>${f[0]}</span><b>${esc(f[1])}</b></div>`).join("")}</div>
       <div class="md-act">${action}<span class="grow"></span><button class="link muted" data-medit="${m.id}">Düzenle</button>${medDel===m.id?`<button class="link" data-mdelyes="${m.id}">Silmeyi onayla</button><button class="link muted" data-mdelno="1">Vazgeç</button>`:`<button class="link muted" data-mdel="${m.id}">Sil</button>`}</div>
     </div>`};
   const em=medEdit&&medEdit!=="new"?meds.find(x=>x.id===medEdit):null;const f=em||{name:"",type:"daily",time:"",everyDays:21,lastDate:today(),start:today(),durDays:null};
-  const durMode=f.durDays?"days":"cont";
   const form=`<form class="card md-form" id="f-med2">
     ${hd("pill",em?"İlacı düzenle":"Yeni ilaç ekle","b-green")}
     <input id="m2-name" placeholder="Adı (ör. D vitamini)" value="${esc(f.name)}" required>
     <div class="seg" role="group" aria-label="Sıklık"><button type="button" class="${f.type==="daily"?"on":""}" data-mt="daily">Her gün</button><button type="button" class="${f.type==="interval"?"on":""}" data-mt="interval">Belirli aralıkla</button></div>
     <input type="hidden" id="m2-type" value="${f.type}">
-    <div class="grid2" id="m2-int" ${f.type==="interval"?"":"hidden"}>
+    <div id="m2-int" ${f.type==="interval"?"":"hidden"}>
       <label class="f">Kaç günde bir<input id="m2-every" type="number" inputmode="numeric" min="1" value="${f.everyDays||21}"></label>
-      <label class="f">Son doz tarihi<input id="m2-last" type="date" value="${f.lastDate||today()}" max="${today()}"></label>
     </div>
     <div class="grid2">
       <label class="f">Başlangıç tarihi<input id="m2-start" type="date" value="${f.start||""}"></label>
       <label class="f">Saat / not<input id="m2-time" placeholder="ör. sabah" value="${esc(f.time||"")}"></label>
-    </div>
-    <label class="f">Ne kadar süre kullanacaksın?
-      <select id="m2-dmode"><option value="cont" ${durMode==="cont"?"selected":""}>Sürekli (bitiş yok)</option><option value="days" ${durMode==="days"?"selected":""}>Belirli gün sayısı</option><option value="end">Bitiş tarihine kadar</option></select></label>
-    <div class="grid2" id="m2-dur" ${durMode==="days"?"":"hidden"}>
-      <label class="f">Gün sayısı<input id="m2-days" type="number" inputmode="numeric" min="1" value="${f.durDays||30}"></label>
-      <label class="f" id="m2-endwrap">Bitiş tarihi<input id="m2-end" type="date" value="${f.durDays&&f.start?addDays(f.start,f.durDays-1):""}"></label>
     </div>
     <div class="small muted" id="m2-sum"></div>
     <div class="row"><button class="btn primary grow">${em?"Değişiklikleri kaydet":"Listeye ekle"}</button>${medEdit?`<button type="button" class="btn ghost" data-mcancel="1">Vazgeç</button>`:""}</div>
@@ -959,13 +951,11 @@ function vMeds(){
     <div class="tile"><span class="tl">3 gün içinde</span><b class="num">${soon}</b></div></div>
   ${active.map(card).join("")}
   ${done.length?`<h3 style="margin-top:6px">Tamamlananlar</h3>${done.map(card).join("")}`:""}`
-  :medEdit?"":`<div class="card empty-coach"><span class="avatar lg">${ico("pill")}</span><b>İlk ilacını ekle</b><span class="small muted">Başlangıç tarihini ve ne kadar süre kullanacağını gir; kaçıncı günde olduğunu, kalan günleri ve bitiş tarihini burada görürsün.</span><button class="btn primary" data-medit="new">+ Yeni ilaç</button></div>`}
-  ${medEdit?"":`<div class="small muted">İğneler için "Bugün yapıldı"ya bastığında son doz tarihi güncellenir ve bir sonraki tarih yeniden hesaplanır.</div>`}`;
+  :medEdit?"":`<div class="card empty-coach"><span class="avatar lg">${ico("pill")}</span><b>İlk ilacını ekle</b><span class="small muted">Başlangıç tarihini gir; ilaçlar sürekli takip edilir, iğnelerde bir sonraki tarih otomatik hesaplanır.</span><button class="btn primary" data-medit="new">+ Yeni ilaç</button></div>`}
+  ${medEdit?"":`<div class="small muted">Tüm ilaçlar sürekli takip edilir. İğnelerde "Bugün yapıldı"ya bastığında bir sonraki tarih yeniden hesaplanır.</div>`}`;
 }
-function medFormSummary(){const el=$("#m2-sum");if(!el)return;const st=$("#m2-start").value,mode=$("#m2-dmode").value;
-  if(!st){el.textContent="Başlangıç tarihi girersen geçen ve kalan gün sayısını gösterebilirim.";return}
-  if(mode==="cont"){el.textContent=fmtDY(st)+" başlangıç, sürekli kullanım.";return}
-  const n=parseInt($("#m2-days").value,10);if(n>0){el.textContent=fmtDY(st)+" → "+fmtDY(addDays(st,n-1))+" · toplam "+n+" gün.";}}
+function medFormSummary(){const el=$("#m2-sum");if(!el)return;const st=$("#m2-start").value;
+  el.textContent=st?fmtDY(st)+" başlangıç · sürekli kullanım, bitiş yok.":"Sürekli kullanım, bitiş yok.";}
 
 function lastSets(key){const ws=allWorkouts();for(let i=ws.length-1;i>=0;i--){const e=(ws[i].ex||[]).find(x=>x.k===key);if(e&&e.sets.some(s=>s.done))return {date:ws[i].date,sets:e.sets.filter(s=>s.done)}}return null}
 function suggestion(ex,last){
@@ -991,7 +981,7 @@ function contextText(){
     const k=v?(v.foods||[]).reduce((a,f)=>a+(+f.kcal||0),0):0,pr=v?(v.foods||[]).reduce((a,f)=>a+(+f.p||0),0):0;
     last7.push(d+": su "+(v?v.water:0)+" ml, "+Math.round(k)+" kcal, "+Math.round(pr)+" g protein, antrenman "+(v&&v.workouts.length?v.workouts.map(x=>x.plan).join("+"):"yok"))}
   const ws=allWorkouts().slice(-4).map(x=>x.date+": "+(x.ex||[]).map(e=>e.name+" "+e.sets.filter(s=>s.done).map(s=>(s.w?s.w+"x":"")+s.r).join(",")).join("; ")+(x.watch?" [Apple Watch: "+(x.watch.kcal?x.watch.kcal+" aktif kcal, ":"")+(x.watch.avg?"ort nabız "+x.watch.avg+", ":"")+(x.watch.max?"maks nabız "+x.watch.max+", ":"")+(x.watch.min?x.watch.min+" dk":"")+"]":""));
-  const meds=p.meds.map(m=>{const i=medInfo(m);return m.name+" ("+(m.type==="daily"?"her gün":m.everyDays+" günde bir, son doz "+(m.lastDate||"?"))+"; "+medLine(m,i)+(i.end?", bitiş "+i.end:"")+")"}).join(", ");
+  const meds=p.meds.map(m=>{const i=medInfo(m);return m.name+" ("+(m.type==="daily"?"her gün":m.everyDays+" günde bir, sürekli")+"; "+medLine(m,i)+")"}).join(", ");
   return [
     "Kullanıcı profili: "+(p.name||"isimsiz")+", "+(p.age?p.age+" yaş":"yaş bilinmiyor")+", boy "+p.heightCm+" cm, güncel kilo "+(w?w+" kg (VKİ "+r1(bmi(w))+")":"bilinmiyor")+".",
     "Hedef: "+({fast:"hızlı kilo almak (kaslı kilo, +500 kcal fazla)",gain:"kilo ve kas almak",maintain:"kilosunu koruyup güçlenmek",fit:"genel kondisyon"}[p.goal])+". Antrenman yeri: spor salonu (yurtta idman yapmıyor, yurtta olduğu günler dinlenme)"+". Program: kilo alma odaklı İtiş/Çekiş/Bacak dönüşümü, her bölgeden 2 hareket ("+Object.values(PDAYS).map(d=>d.name+": "+d.ex.map(e=>e[1]).join(", ")).join(" | ")+"); "+(retInfo()?"şu an 2–3 aylık aradan sonra 14 günlük dönüş dönemindeler ("+retInfo().day+". gün): haftada 3 gün hafif full body ("+PDAYS.F.ex.map(e=>e[1]).join(", ")+"), sonra ana programa geçecek":"sıradaki gün "+dayName(curDay()))+"; idman günleri "+GUN_K.filter((_,i)=>sched()[i]).join(", ")+", diğer günler dinlenme.",
@@ -2015,8 +2005,7 @@ document.addEventListener("input",ev=>{
   if(t.dataset&&t.dataset.pf&&aiFoodPreview){const [i,k]=t.dataset.pf.split(":");aiFoodPreview[+i][k]=k==="n"?t.value:(+t.value||0);const el=$("#pv-total");if(el)el.textContent=pvTotal()}
   if(t.dataset&&t.dataset.f&&active){active.ex[+t.dataset.ex].sets[+t.dataset.set][t.dataset.f]=t.value;saveActive()}
   if(t.id==="m-type"){$("#m-int").hidden=t.value!=="interval"}
-  if(t.id==="m2-days"||t.id==="m2-start"){const st=$("#m2-start").value,n=parseInt($("#m2-days").value,10);if(st&&n>0)$("#m2-end").value=addDays(st,n-1);medFormSummary()}
-  if(t.id==="m2-end"){const st=$("#m2-start").value,en=t.value;if(st&&en&&en>=st)$("#m2-days").value=diffDays(st,en)+1;medFormSummary()}
+  if(t.id==="m2-start")medFormSummary();
 });
 document.addEventListener("change",async ev=>{const t=ev.target;
   if(t.id==="in-restore"&&t.files&&t.files[0]){const f=t.files[0];t.value="";const c=$("#restore-confirm");
@@ -2026,8 +2015,7 @@ document.addEventListener("change",async ev=>{const t=ev.target;
   if(t.id==="lf-start"){S.lifts.start=t.value||null;mark("lifts");render();return}
   if((t.id==="in-cam"||t.id==="in-gal")&&t.files&&t.files[0]){const f=t.files[0];
     try{setPhoto(await shrinkImage(f));aiFoodPreview=null;render()}catch(e){const el=$("#ai-food-err");if(el)el.textContent=e.message}return}
-  if(t.id==="m2-dmode"){$("#m2-dur").hidden=t.value==="cont";if(t.value==="end"){const e=$("#m2-end");if(e)e.focus()}medFormSummary()}
-  if(t.id==="m2-start"||t.id==="m2-end"||t.id==="m2-days"){const st=$("#m2-start").value;if(t.id==="m2-end"&&st&&t.value>=st)$("#m2-days").value=diffDays(st,t.value)+1;else if(st&&+$("#m2-days").value>0)$("#m2-end").value=addDays(st,+$("#m2-days").value-1);medFormSummary()}
+  if(t.id==="m2-start")medFormSummary();
   if(t.id==="sel-ex"){progEx=t.value;render()}
   if(t.id==="m-type"){$("#m-int").hidden=t.value!=="interval"}
 });
@@ -2068,11 +2056,11 @@ document.addEventListener("submit",async ev=>{
     if(a.avg&&a.max&&a.avg>a.max){toast("Ortalama nabız maksimumdan büyük olamaz");return}
     if(!a.kcal&&!a.avg&&!a.max){toast("En az bir değer gir ya da Şimdi değil'e bas");return}
     fw.w.watch=a;if(a.min)fw.w.min=a.min;touchDay(fw.d);watchAsk=null;toast("Saat verileri kaydedildi");render();return}
-  if(f.id==="f-med2"){const name=$("#m2-name").value.trim();if(!name)return;const type=$("#m2-type").value;const mode=$("#m2-dmode").value;
-    const st=$("#m2-start").value||null;let dur=null;if(mode!=="cont"){dur=parseInt($("#m2-days").value,10);if(mode==="end"&&st&&$("#m2-end").value)dur=diffDays(st,$("#m2-end").value)+1;if(!(dur>0)){toast("Gün sayısını ya da bitiş tarihini gir");return}if(!st){toast("Süre için başlangıç tarihi gerekli");return}}
+  if(f.id==="f-med2"){const name=$("#m2-name").value.trim();if(!name)return;const type=$("#m2-type").value;
+    const st=$("#m2-start").value||null;const dur=null;if(type==="interval"&&!st){toast("İlk doz için başlangıç tarihi gir");return}
     const ex=medEdit&&medEdit!=="new"?S.profile.meds.find(m=>m.id===medEdit):null;const m=ex||{id:uid()};
     Object.assign(m,{name:name.slice(0,60),type,time:$("#m2-time").value.trim().slice(0,30),start:st,durDays:dur});
-    if(type==="interval"){m.everyDays=Math.max(1,parseInt($("#m2-every").value,10)||21);m.lastDate=$("#m2-last").value||m.lastDate||today()}
+    if(type==="interval"){m.everyDays=Math.max(1,parseInt($("#m2-every").value,10)||21);if(m.lastDate&&st&&m.lastDate<st&&!(m.shots||[]).length)m.lastDate=null}
     if(!ex)S.profile.meds.push(m);medEdit=null;mark("profile");toast(ex?"Kaydedildi":"Eklendi");render();return}
   if(f.id==="f-med"){const type=$("#m-type").value;const m={id:uid(),name:$("#m-name").value.trim(),type,time:$("#m-time").value.trim()};
     if(type==="interval"){m.everyDays=Math.max(1,+$("#m-every").value||21);m.lastDate=$("#m-last").value||today()}
@@ -2109,7 +2097,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&sheetOpen)closeShee
 })();
 
 /* yeni sürüm kontrolü (bağımsız sürüm) */
-const APP_V="2026.09.30-0134";
+const APP_V="2026.09.30-0144";
 async function checkUpdate(manual){if(inViewer()||APP_V.startsWith("__"))return;
   try{const r=await fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"});const t=await r.text();const m=t.match(/const APP_V="([^"]+)"/);
     if(m&&m[1]!==APP_V){const el=$("#upd");el.innerHTML=`<span class="grow">Yeni sürüm hazır</span><button class="btn sm" id="btn-upd">Güncelle</button>`;el.hidden=false;el.dataset.v=m[1]}
