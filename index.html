@@ -644,7 +644,7 @@ function toast(t){const el=$("#toast");el.textContent=t;el.hidden=false;clearTim
 /* ---------- program ---------- */
 const GUN_K=["Pzt","Sal","Çar","Per","Cum","Cmt","Paz"];
 const wd=d=>(parseD(d).getDay()+6)%7;
-function sched(){const s=S.profile.schedule;return Array.isArray(s)&&s.length===7?s:[1,0,1,0,1,0,0]}
+function sched(){const s=S.profile.schedule;return Array.isArray(s)&&s.length===7?s:[1,0,1,0,1,1,0]}
 function isTrainDay(d){return !!sched()[wd(d)]}
 function wkTarget(){return sched().filter(Boolean).length||3}
 const REST=[["walk","Hafif yürüyüş","20–30 dk, konuşabileceğin tempoda"],["sleep","7–9 saat uyku","Toparlanmanın büyük kısmı uykuda olur"]];
@@ -720,7 +720,7 @@ const qLabel=f=>f.n+" ("+f.por+")";
 
 /* ---------- durum & saklama ---------- */
 const DEF_PROFILE={name:"",age:null,heightCm:176,sex:"m",place:"gym",waterGoal:3000,gainerKcal:380,gainerP:15,
-  healthNotes:"",targetKg:null,schedule:[1,0,1,0,1,0,0],meds:[],weights:[],nextWorkout:"A",gainerScoops:2,goal:"fast",aiProvider:null,geminiModel:"gemini-3.8-flash"};
+  healthNotes:"",targetKg:null,schedule:[1,0,1,0,1,1,0],meds:[],weights:[],nextWorkout:"A",gainerScoops:2,goal:"fast",aiProvider:null,geminiModel:"gemini-3.8-flash"};
 const GEMINI_MODELS=["gemini-3.8-flash","gemini-3.5-flash-lite"];
 const S={profile:null,months:{},chat:{msgs:[]},lifts:{start:null,ex:{}},school:null};
 let cloud=null; // {col}
@@ -728,7 +728,7 @@ const dirty=new Set(); let flushT=null, flushing=false;
 
 function loadLocal(){
   try{S.profile=Object.assign({},DEF_PROFILE,JSON.parse(lsGet("gd:profile")||"{}"))}catch(e){S.profile={...DEF_PROFILE}}
-  S.profile.place="gym";if(!S.profile.progV2){S.profile.progV2=true;S.profile.nextWorkout="A";if(S.profile.goal==="gain")S.profile.goal="fast";S.profile.gainerScoops=S.profile.gainerScoops||2}if(!S.profile.geminiModel||/^gemini-2\.5/.test(S.profile.geminiModel))S.profile.geminiModel=GEMINI_MODELS[0];
+  S.profile.place="gym";if(!S.profile.sched4){S.profile.sched4=true;S.profile.schedule=[1,0,1,0,1,1,0]}if(!S.profile.progV2){S.profile.progV2=true;S.profile.nextWorkout="A";if(S.profile.goal==="gain")S.profile.goal="fast";S.profile.gainerScoops=S.profile.gainerScoops||2}if(!S.profile.geminiModel||/^gemini-2\.5/.test(S.profile.geminiModel))S.profile.geminiModel=GEMINI_MODELS[0];
   try{S.chat=JSON.parse(lsGet("gd:chat")||'{"msgs":[]}')}catch(e){}
   try{const l=JSON.parse(lsGet("gd:lifts")||"null");if(l&&l.ex)S.lifts={start:l.start||null,ex:l.ex}}catch(e){}
   try{S.school=migrateSchool(JSON.parse(lsGet("gd:school")||"null"))}catch(e){S.school=defaultSchool()}
@@ -768,7 +768,7 @@ async function initCloud(){
       mark("profile");Object.keys(S.months).forEach(mark);if(S.chat.msgs.length)mark("chat");if(S.lifts.start||Object.keys(S.lifts.ex).length)mark("lifts");mark("school");
     }else{
       snap.docs.forEach(d=>{const v=d.data();if(!v)return;
-        if(d.id==="profile"){S.profile=Object.assign({},DEF_PROFILE,v);S.profile.place="gym";if(!S.profile.progV2){S.profile.progV2=true;S.profile.nextWorkout="A";if(S.profile.goal==="gain")S.profile.goal="fast";S.profile.gainerScoops=S.profile.gainerScoops||2;mark("profile")}}
+        if(d.id==="profile"){S.profile=Object.assign({},DEF_PROFILE,v);S.profile.place="gym";if(!S.profile.sched4){S.profile.sched4=true;S.profile.schedule=[1,0,1,0,1,1,0];mark("profile")}if(!S.profile.progV2){S.profile.progV2=true;S.profile.nextWorkout="A";if(S.profile.goal==="gain")S.profile.goal="fast";S.profile.gainerScoops=S.profile.gainerScoops||2;mark("profile")}}
         else if(d.id==="chat")S.chat={msgs:Array.isArray(v.msgs)?v.msgs.slice():[]};
         else if(d.id==="lifts")S.lifts={start:v.start||null,ex:JSON.parse(JSON.stringify(v.ex||{}))};
         else if(d.id==="school"&&v.courses)S.school=migrateSchool(JSON.parse(JSON.stringify(v)));
