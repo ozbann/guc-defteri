@@ -645,6 +645,24 @@ input,select,textarea{font-size:16px!important}
 .cb-grid span{font-size:12px;color:var(--muted)}
 .cb-badges{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px}
 .confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:60}
+.bh-lbl{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:-4px}
+.bh-next{display:flex;flex-direction:column;gap:8px}
+.bn{display:flex;align-items:center;gap:12px;background:var(--sunk);border-radius:14px;padding:10px 12px}
+.bn .bdg-i{width:38px;height:38px;margin:0;flex:none;opacity:.7}
+.bn .bdg-i svg{width:19px;height:19px}
+.bn b{font-size:14px}
+.bn .bdg-p{width:100%;margin-top:6px}
+.bh-got{display:grid;grid-auto-flow:column;grid-auto-columns:74px;gap:8px;overflow-x:auto;margin-inline:-18px;padding:2px 18px 4px;scrollbar-width:none}
+.bh-got::-webkit-scrollbar{display:none}
+.bm{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
+.bm .bdg-i{margin:0}
+.bm small{font-size:10.5px;font-weight:600;line-height:1.2}
+.bm.on .bdg-i{opacity:1;color:#fff;box-shadow:0 6px 14px -6px rgba(0,0,0,.4)}
+.bm.on.red .bdg-i{background:linear-gradient(135deg,var(--accent),var(--accent-2))}
+.bm.on.amber .bdg-i{background:linear-gradient(135deg,#fbbf24,#f97316)}
+.bm.on.blue .bdg-i{background:linear-gradient(135deg,#38bdf8,#2563eb)}
+.bm.on.green .bdg-i{background:linear-gradient(135deg,#34d399,#059669)}
+.bm.on.violet .bdg-i{background:linear-gradient(135deg,#a78bfa,#6d28d9)}
 #view>*{animation:rise .35s ease both}
 @keyframes rise{from{transform:translateY(6px)}to{transform:none}}
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
@@ -1217,6 +1235,7 @@ function vToday(){
     ${waterMinimal(v.water,p.waterGoal)}
   </div>
   ${gainerCard(v)}
+  ${badgeHomeCard()}
 
   <div class="card">
     ${hd("pill","İlaç ve vitaminler","b-green",`<button class="btn sm ghost" data-go="meds">Tümü</button>`)}
@@ -1564,6 +1583,14 @@ function badgeList(){const p=S.profile,t=targets();const nWo=allWorkouts().lengt
     {id:"pr10",name:"Rekor makinesi",desc:"10 kez rekor kır",ic:"trophy",tone:"green",cur:prCount,goal:10},
     {id:"backup",name:"Güvende",desc:"İlk yedek dosyanı indir",ic:"download",tone:"blue",cur:lsGet("gd:lastbackup")?1:0,goal:1}
   ].map(b=>Object.assign(b,{earned:!b.off&&b.cur>=b.goal}))}
+function badgeHomeCard(){const bl=badgeList();const got=bl.filter(x=>x.earned).sort((a,b)=>((S.profile.badges||{})[b.id]||"").localeCompare((S.profile.badges||{})[a.id]||""));
+  const next=bl.filter(x=>!x.earned&&!x.off).sort((a,b)=>b.cur/b.goal-a.cur/a.goal).slice(0,3);
+  const mini=b=>`<div class="bm ${b.earned?"on "+b.tone:""}" title="${esc(b.name)}"><span class="bdg-i">${ico(b.ic)}</span><small>${esc(b.name)}</small></div>`;
+  return `<div class="card">${hd("trophy","Rozetler","b-amber",`<button class="btn sm ghost" data-go="prog">${got.length} / ${bl.length} · Tümü</button>`)}
+    ${next.length?`<div class="bh-lbl">Sıradaki</div><div class="bh-next">${next.map(b=>{const pct=Math.min(100,b.cur/b.goal*100);return `<div class="bn"><span class="bdg-i">${ico(b.ic)}</span><div class="grow" style="min-width:0"><div class="row between"><b class="clip">${esc(b.name)}</b><span class="small muted num">${b.unit?r1(b.cur):b.cur}/${b.goal}${b.unit?" "+b.unit:""}</span></div><div class="small muted clip">${esc(b.desc)}</div><div class="bdg-p"><span style="width:${pct}%"></span></div></div></div>`}).join("")}</div>`:""}
+    <div class="bh-lbl">Kazandıkların</div>
+    ${got.length?`<div class="bh-got" data-ks="bhgot">${got.map(mini).join("")}</div>`:`<div class="empty">Henüz rozetin yok. İlk idmanını bitirdiğinde "İlk adım" rozetini kazanırsın.</div>`}
+  </div>`}
 function badgeTile(b){const pct=Math.min(100,b.goal?b.cur/b.goal*100:0);const when=(S.profile.badges||{})[b.id];
   return `<div class="bdg ${b.earned?"on "+b.tone:""}" title="${esc(b.desc)}"><span class="bdg-i">${ico(b.ic)}</span><b>${esc(b.name)}</b><small>${b.earned?(when?fmtD(when):"kazanıldı"):esc(b.desc)}</small>${b.earned?"":`<span class="bdg-p"><span style="width:${pct}%"></span></span><small class="num">${b.unit?r1(b.cur):b.cur} / ${b.goal}${b.unit?" "+b.unit:""}</small>`}</div>`}
 /* kutlama katmanı */
@@ -2073,7 +2100,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&sheetOpen)closeShee
 })();
 
 /* yeni sürüm kontrolü (bağımsız sürüm) */
-const APP_V="2026.09.30-0126";
+const APP_V="2026.09.30-0128";
 async function checkUpdate(manual){if(inViewer()||APP_V.startsWith("__"))return;
   try{const r=await fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"});const t=await r.text();const m=t.match(/const APP_V="([^"]+)"/);
     if(m&&m[1]!==APP_V){const el=$("#upd");el.innerHTML=`<span class="grow">Yeni sürüm hazır</span><button class="btn sm" id="btn-upd">Güncelle</button>`;el.hidden=false;el.dataset.v=m[1]}
