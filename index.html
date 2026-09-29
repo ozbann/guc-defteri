@@ -1222,6 +1222,7 @@ function vToday(){
   </div>
 
   ${backupNag()}${todayClassStrip()}
+  ${badgeHomeCard()}
   <div class="card goals">
     <div class="g-head"><div style="min-width:0"><div class="g-eyebrow">Bugünün hedefleri</div><div class="g-title">${goalHeadline(kcal,prot,v.water,t,p)}</div></div><button class="btn sm ghost" data-go="food">+ Yemek</button></div>
     <div class="g-body">
@@ -1235,7 +1236,6 @@ function vToday(){
     ${waterMinimal(v.water,p.waterGoal)}
   </div>
   ${gainerCard(v)}
-  ${badgeHomeCard()}
 
   <div class="card">
     ${hd("pill","İlaç ve vitaminler","b-green",`<button class="btn sm ghost" data-go="meds">Tümü</button>`)}
@@ -2100,7 +2100,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&sheetOpen)closeShee
 })();
 
 /* yeni sürüm kontrolü (bağımsız sürüm) */
-const APP_V="2026.09.30-0128";
+const APP_V="2026.09.30-0129";
 async function checkUpdate(manual){if(inViewer()||APP_V.startsWith("__"))return;
   try{const r=await fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"});const t=await r.text();const m=t.match(/const APP_V="([^"]+)"/);
     if(m&&m[1]!==APP_V){const el=$("#upd");el.innerHTML=`<span class="grow">Yeni sürüm hazır</span><button class="btn sm" id="btn-upd">Güncelle</button>`;el.hidden=false;el.dataset.v=m[1]}
