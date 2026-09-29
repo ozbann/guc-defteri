@@ -608,6 +608,8 @@ body.noscroll{overflow:hidden}
 /* yakınlaştırmayı engelle: iOS 16px altı alanlara odaklanınca zoom yapar; çift dokunma zoom'unu kapat */
 html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 input,select,textarea{font-size:16px!important}
+.upd{position:fixed;left:50%;transform:translateX(-50%);top:calc(10px + env(safe-area-inset-top,0px));z-index:30;display:flex;align-items:center;gap:12px;background:var(--fg);color:var(--bg);border-radius:999px;padding:8px 8px 8px 18px;font-weight:700;font-size:14px;box-shadow:0 10px 30px -10px rgba(0,0,0,.4);width:max-content;max-width:calc(100% - 32px)}
+.upd .btn{background:var(--accent);color:#fff}
 #view>*{animation:rise .35s ease both}
 @keyframes rise{from{transform:translateY(6px)}to{transform:none}}
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
@@ -626,6 +628,7 @@ input,select,textarea{font-size:16px!important}
 
 <nav class="tabs" aria-label="Bölümler"><div class="in" id="tabs"></div></nav>
 <div class="sheet" id="sheet" hidden></div>
+<div class="upd" id="upd" hidden></div>
 <div class="toast" id="toast" hidden></div>
 
 <script>
@@ -1721,6 +1724,7 @@ function vSettings(){
     <label class="btn ghost file-btn">${ico("upload")}Yedek dosyasından geri yükle<input type="file" id="in-restore" accept=".json,application/json" hidden></label>
     <div id="restore-confirm" class="card soft-red" hidden></div>
     <div class="small muted" id="bk-last">${(()=>{const l=lsGet("gd:lastbackup");if(!l)return "Henüz yedek dosyası indirmedin.";const n=diffDays(l,today());return "Son yedek: "+(n===0?"bugün":n+" gün önce")+(n>=BK_DAYS?" · yeni bir yedek almanın zamanı geldi":"")+" · 3 haftada bir hatırlatılır"})()}</div>
+    ${inViewer()?"":`<div class="row between small muted"><span>Sürüm <span class="num">${APP_V}</span></span><button class="link" id="btn-chkupd">Güncellemeleri kontrol et</button></div>`}
     <details><summary class="small">Metin olarak kopyala / yapıştır</summary>
     <div class="row" style="margin-top:8px"><button class="btn ghost grow" id="btn-export">Yedeği göster</button><button class="btn ghost grow" id="btn-import">Yedeği geri yükle</button></div></details>
     <textarea id="io" hidden aria-label="Yedek verisi"></textarea>
@@ -1840,6 +1844,8 @@ document.addEventListener("click",async ev=>{
   if(b.id==="btn-copy"){const io=$("#io");try{await navigator.clipboard.writeText(io.value);toast("Kopyalandı")}catch(e){io.select();toast("Metni seçip kopyala")}return}
   if(b.id==="btn-import-go"){try{restoreFrom(JSON.parse($("#io").value))}catch(e){toast("Yedek metni okunamadı")}return}
   if(b.id==="btn-dl"){downloadBackup();return}
+  if(b.id==="btn-upd"){applyUpdate();return}
+  if(b.id==="btn-chkupd"){checkUpdate(true);return}
   if(b.id==="btn-restore-yes"){if(pendingRestore){restoreFrom(pendingRestore);pendingRestore=null}return}
   if(b.id==="btn-restore-no"){pendingRestore=null;const c=$("#restore-confirm");if(c)c.hidden=true;return}
 });
@@ -1943,11 +1949,19 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&sheetOpen)closeShee
     if(n!=null){e.preventDefault();commit(n);setTimeout(()=>{const x=$("#lq");if(x)x.focus()},0)}});
 })();
 
+/* yeni sürüm kontrolü (bağımsız sürüm) */
+const APP_V="2026.09.30-0117";
+async function checkUpdate(manual){if(inViewer()||APP_V.startsWith("__"))return;
+  try{const r=await fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"});const t=await r.text();const m=t.match(/const APP_V="([^"]+)"/);
+    if(m&&m[1]!==APP_V){const el=$("#upd");el.innerHTML=`<span class="grow">Yeni sürüm hazır</span><button class="btn sm" id="btn-upd">Güncelle</button>`;el.hidden=false;el.dataset.v=m[1]}
+    else if(manual)toast("En son sürümü kullanıyorsun")}catch(e){if(manual)toast("Güncelleme kontrol edilemedi, internetini kontrol et")}}
+function applyUpdate(){const v=($("#upd").dataset.v||Date.now());location.replace(location.pathname+"?v="+encodeURIComponent(v))}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")checkUpdate()});
 /* pinch-zoom engelle (iOS ana ekran uygulaması) */
 ["gesturestart","gesturechange","gestureend"].forEach(t=>document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
 document.addEventListener("touchmove",e=>{if(e.touches&&e.touches.length>1)e.preventDefault()},{passive:false});
 /* ---------- başlat ---------- */
-loadLocal();if(S.school._mig){delete S.school._mig;mark("school")}render();Promise.resolve(initCloud()).catch(()=>{}).finally(()=>{if(S.school&&S.school._mig){delete S.school._mig;mark("school");render()}importWatchHash()});
+loadLocal();setTimeout(checkUpdate,1500);if(S.school._mig){delete S.school._mig;mark("school")}render();Promise.resolve(initCloud()).catch(()=>{}).finally(()=>{if(S.school&&S.school._mig){delete S.school._mig;mark("school");render()}importWatchHash()});
 window.addEventListener("hashchange",importWatchHash);
 })();
 </script>
