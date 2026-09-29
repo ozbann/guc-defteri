@@ -669,7 +669,7 @@ const LEGACY_PLANS={
 const PDAYS={
   A:{name:"İtiş",sub:"Göğüs · Omuz · Arka kol",ex:[["bench","Bench Press",4,"6-8","kg"],["incdb","Incline Dumbbell Press",3,"8-10","kg"],["ohp","Overhead Press",3,"6-8","kg"],["lateral","Lateral Raise",3,"12-15","kg"],["pushdown","Triceps Pushdown",3,"10-12","kg"],["ohtri","Overhead Triceps Extension",3,"10-12","kg"]]},
   B:{name:"Çekiş",sub:"Sırt · Ön kol · Karın",ex:[["pulldown","Lat Pulldown",4,"6-10","kg"],["row","Barbell Row",3,"8-10","kg"],["curl","Barbell Curl",3,"8-12","kg"],["hammer","Hammer Curl",3,"10-12","kg"],["cablecr","Cable Crunch",3,"12-15","kg"],["plank","Plank",3,"30-45","sn"]]},
-  C:{name:"Bacak",sub:"Ön bacak · Arka bacak · Baldır",ex:[["squat","Squat (bar / Smith)",4,"6-8","kg"],["legpress","Leg Press",3,"10-12","kg"],["rdl","Romanian Deadlift",3,"8-10","kg"],["legcurl","Leg Curl",3,"10-12","kg"],["calf","Ayakta Calf Raise",3,"12-15","kg"],["seatcalf","Oturarak Calf Raise",3,"15-20","kg"]]}
+  C:{name:"Bacak",sub:"Ön bacak · Arka bacak · Baldır",ex:[["legpress","Leg Press",4,"8-10","kg"],["legext","Leg Extension",3,"10-15","kg"],["legcurl","Lying Leg Curl",4,"8-12","kg"],["hipthrust","Hip Thrust",3,"8-12","kg"],["calf","Ayakta Calf Raise",3,"12-15","kg"],["seatcalf","Oturarak Calf Raise",3,"15-20","kg"]]}
 };
 const PROGRAM=Object.values(PDAYS).flatMap(d=>d.ex);
 const PLANS={gym:{A:PDAYS.A.ex,B:PDAYS.B.ex,C:PDAYS.C.ex},home:{A:PDAYS.A.ex,B:PDAYS.B.ex,C:PDAYS.C.ex}};
@@ -1758,7 +1758,7 @@ document.addEventListener("click",async ev=>{
   if(ds.place){S.profile.place=ds.place;mark("profile");render();return}
   if(ds.done){const [e,s]=ds.done.split(":").map(Number);const set=active.ex[e].sets[s];
     if(!set.done&&set.r===""){const def=(PLANS[active.place][active.plan].find(x=>x[0]===active.ex[e].k)||[])[3]||"8";set.r=def.split("-")[1]}
-    set.done=!set.done;saveActive();render();if(set.done)startTimer(active.ex[e].unit==="kg"&&/squat|bench|row|rdl|ohp|legpress|deadlift/i.test(active.ex[e].k)?120:90);return}
+    set.done=!set.done;saveActive();render();if(set.done)startTimer(active.ex[e].unit==="kg"&&/squat|bench|row|rdl|ohp|legpress|deadlift|pulldown|hipthrust/i.test(active.ex[e].k)?120:90);return}
   if(ds.addset){const e=active.ex[+ds.addset];const l=e.sets[e.sets.length-1];e.sets.push({w:l?l.w:"",r:"",done:false});saveActive();render();return}
   if(ds.delset){active.ex[+ds.delset].sets.pop();saveActive();render();return}
   if(ds.t){if(ds.t==="stop")stopTimer();else{timer.end=Math.max(timer.end,Date.now())+30000;clearInterval(timer.iv);timer.iv=setInterval(tickTimer,250);tickTimer()}return}
