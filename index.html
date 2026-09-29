@@ -1,4 +1,4 @@
-<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="ozben"><meta name="application-name" content="ozben"><meta name="theme-color" content="#e11d48"><style>html{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="ozben"><meta name="application-name" content="ozben"><meta name="theme-color" content="#e11d48"><style>html{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
 <title>ozben</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -605,6 +605,9 @@ body.noscroll{overflow:hidden}
 .g-res{font-size:13.5px;font-weight:600;border-radius:12px;padding:9px 12px}
 .g-res.ok{background:var(--good-soft);color:var(--good)}
 .g-res.bad{background:var(--accent-soft);color:var(--accent)}
+/* yakınlaştırmayı engelle: iOS 16px altı alanlara odaklanınca zoom yapar; çift dokunma zoom'unu kapat */
+html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+input,select,textarea{font-size:16px!important}
 #view>*{animation:rise .35s ease both}
 @keyframes rise{from{transform:translateY(6px)}to{transform:none}}
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
@@ -1940,6 +1943,9 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&sheetOpen)closeShee
     if(n!=null){e.preventDefault();commit(n);setTimeout(()=>{const x=$("#lq");if(x)x.focus()},0)}});
 })();
 
+/* pinch-zoom engelle (iOS ana ekran uygulaması) */
+["gesturestart","gesturechange","gestureend"].forEach(t=>document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
+document.addEventListener("touchmove",e=>{if(e.touches&&e.touches.length>1)e.preventDefault()},{passive:false});
 /* ---------- başlat ---------- */
 loadLocal();if(S.school._mig){delete S.school._mig;mark("school")}render();Promise.resolve(initCloud()).catch(()=>{}).finally(()=>{if(S.school&&S.school._mig){delete S.school._mig;mark("school");render()}importWatchHash()});
 window.addEventListener("hashchange",importWatchHash);
