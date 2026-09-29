@@ -616,6 +616,35 @@ input,select,textarea{font-size:16px!important}
 .wk.cur{box-shadow:inset 0 0 0 2px var(--sch-1);color:var(--fg)}
 .wk.on.cur{box-shadow:inset 0 0 0 2px var(--fg);color:#fff}
 .wk:disabled{opacity:.35;cursor:default}
+.bdg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.bdg{background:var(--sunk);border-radius:16px;padding:12px 8px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:3px;min-width:0}
+.bdg b{font-size:12.5px;line-height:1.2}
+.bdg small{font-size:10.5px;color:var(--muted);line-height:1.25}
+.bdg-i{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--surface);color:var(--muted);margin-bottom:4px;opacity:.6}
+.bdg-i svg{width:22px;height:22px}
+.bdg.on .bdg-i{opacity:1;color:#fff;box-shadow:0 6px 14px -6px rgba(0,0,0,.4)}
+.bdg.on.red .bdg-i{background:linear-gradient(135deg,var(--accent),var(--accent-2))}
+.bdg.on.amber .bdg-i{background:linear-gradient(135deg,#fbbf24,#f97316)}
+.bdg.on.blue .bdg-i{background:linear-gradient(135deg,#38bdf8,#2563eb)}
+.bdg.on.green .bdg-i{background:linear-gradient(135deg,#34d399,#059669)}
+.bdg.on.violet .bdg-i{background:linear-gradient(135deg,#a78bfa,#6d28d9)}
+.bdg-p{width:80%;height:4px;border-radius:9px;background:color-mix(in srgb,var(--muted) 20%,transparent);overflow:hidden;margin-top:3px}
+.bdg-p span{display:block;height:100%;background:var(--amber);border-radius:9px}
+.celebrate{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:20px}
+.cb-back{position:absolute;inset:0;background:rgba(8,10,16,.55);animation:shfade .2s}
+.cb-card{position:relative;background:var(--surface);border-radius:26px;padding:22px 18px 18px;width:100%;max-width:400px;max-height:85dvh;overflow:auto;display:flex;flex-direction:column;gap:12px;text-align:center;box-shadow:0 20px 60px -20px rgba(0,0,0,.5);animation:cbpop .35s cubic-bezier(.2,1.3,.4,1)}
+@keyframes cbpop{from{transform:scale(.85);opacity:0}to{transform:none;opacity:1}}
+.cb-eyebrow{font-size:12.5px;font-weight:700;color:var(--muted)}
+.cb-title{font-family:var(--f-display);font-weight:800;font-size:26px;letter-spacing:-.02em}
+.cb-stars{display:flex;justify-content:center;gap:6px;font-size:30px;color:var(--line)}
+.cb-stars .on{color:#fbbf24}
+.cb-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cb-grid>div{background:var(--sunk);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:2px}
+.cb-grid b{font-family:var(--f-display);font-size:22px}
+.cb-grid b small{font-size:12px;color:var(--muted)}
+.cb-grid span{font-size:12px;color:var(--muted)}
+.cb-badges{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px}
+.confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:60}
 #view>*{animation:rise .35s ease both}
 @keyframes rise{from{transform:translateY(6px)}to{transform:none}}
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
@@ -634,6 +663,7 @@ input,select,textarea{font-size:16px!important}
 
 <nav class="tabs" aria-label="Bölümler"><div class="in" id="tabs"></div></nav>
 <div class="sheet" id="sheet" hidden></div>
+<div class="celebrate" id="celebrate" hidden></div>
 <div class="upd" id="upd" hidden></div>
 <div class="toast" id="toast" hidden></div>
 
@@ -1498,6 +1528,76 @@ function vSchool(){
   </div>`;
 }
 
+/* ---------- rozetler ve tebrikler ---------- */
+function weekStart(d){return addDays(d,-wd(d))}
+function weekStats(from){const t=targets(),p=S.profile;let wo=0,water=0,prot=0,kcal=0,logged=0,gainer=0;
+  for(let i=0;i<7;i++){const d=addDays(from,i),v=dayRO(d);if(!v)continue;wo+=(v.workouts||[]).length;if((v.water||0)>=p.waterGoal)water++;
+    const fs=v.foods||[];if(fs.length){logged++;const k=fs.reduce((a,f)=>a+(+f.kcal||0),0),pr=fs.reduce((a,f)=>a+(+f.p||0),0);if(k>=t.kcal*.95)kcal++;if(pr>=t.protein)prot++}
+    if(fs.some(f=>f.gid==="am")&&fs.some(f=>f.gid==="pm"))gainer++}
+  const ws=p.weights.filter(x=>x.d>=from&&x.d<addDays(from,7));const dw=ws.length>=2?r1(ws[ws.length-1].kg-ws[0].kg):null;
+  return {wo,water,prot,kcal,logged,gainer,dw}}
+function runLen(test){let best=0,cur=0;const days=allDays().map(x=>x[0]);if(!days.length)return 0;
+  for(let d=days[0];d<=today();d=addDays(d,1)){if(test(dayRO(d)||{}))best=Math.max(best,++cur);else if(d!==today())cur=0}return best}
+function weeklyStreak(){const mon=weekStart(today());let s=0;for(let k=0;k<104;k++){const c=weekStats(addDays(mon,-7*k)).wo;if(c>=wkTarget())s++;else if(k===0)continue;else break}return s}
+function bestWeek(){const days=allDays();if(!days.length)return 0;let best=0;for(let w=weekStart(days[0][0]);w<=today();w=addDays(w,7))best=Math.max(best,weekStats(w).wo);return best}
+function badgeList(){const p=S.profile,t=targets();const nWo=allWorkouts().length;const W=p.weights,w=curWeight(),first=W[0];const gain=w&&first?r1(w-first.kg):0;
+  const hit=v=>{const fs=v.foods||[];return fs.reduce((a,f)=>a+(+f.p||0),0)>=t.protein};
+  let prCount=0;{const m={};allWorkouts().forEach(x=>(x.ex||[]).forEach(e=>{if(e.unit!=="kg")return;const b=Math.max(...e.sets.map(s=>e1rm(+s.w||0,+s.r||0)));if(m[e.k]!=null&&b>m[e.k]+.1)prCount++;m[e.k]=Math.max(m[e.k]??0,b)}))}
+  let kcalWeek=0;{const days=allDays();if(days.length)for(let wk=weekStart(days[0][0]);wk<=today();wk=addDays(wk,7))kcalWeek=Math.max(kcalWeek,weekStats(wk).kcal)}
+  return [
+    {id:"wo1",name:"İlk adım",desc:"İlk idmanını bitir",ic:"bolt",tone:"red",cur:nWo,goal:1},
+    {id:"wo10",name:"Isındık",desc:"10 idman",ic:"bolt",tone:"red",cur:nWo,goal:10},
+    {id:"wo25",name:"Düzenli",desc:"25 idman",ic:"bolt",tone:"red",cur:nWo,goal:25},
+    {id:"wo50",name:"Demir irade",desc:"50 idman",ic:"trophy",tone:"amber",cur:nWo,goal:50},
+    {id:"wo100",name:"Yüzlük",desc:"100 idman",ic:"trophy",tone:"amber",cur:nWo,goal:100},
+    {id:"fullweek",name:"Tam hafta",desc:"Bir haftada planındaki tüm idmanlar",ic:"clock",tone:"blue",cur:bestWeek(),goal:wkTarget()},
+    {id:"streak4",name:"4 hafta seri",desc:"4 hafta üst üste tam hafta",ic:"flame",tone:"amber",cur:weeklyStreak(),goal:4},
+    {id:"streak12",name:"3 ay seri",desc:"12 hafta üst üste tam hafta",ic:"flame",tone:"amber",cur:weeklyStreak(),goal:12},
+    {id:"water7",name:"Su ustası",desc:"7 gün üst üste su hedefi",ic:"drop",tone:"blue",cur:runLen(v=>(v.water||0)>=p.waterGoal),goal:7},
+    {id:"prot7",name:"Protein avcısı",desc:"7 gün üst üste protein hedefi",ic:"shield",tone:"green",cur:runLen(hit),goal:7},
+    {id:"kcal5",name:"Kalori kralı",desc:"Bir haftada 5 gün kalori hedefi",ic:"flame",tone:"green",cur:kcalWeek,goal:5},
+    {id:"gainer7",name:"Gainer disiplini",desc:"7 gün üst üste sabah ve akşam gainer",ic:"bolt",tone:"amber",cur:runLen(v=>(v.foods||[]).some(f=>f.gid==="am")&&(v.foods||[]).some(f=>f.gid==="pm")),goal:7},
+    {id:"gain1",name:"+1 kg",desc:"İlk tartından 1 kg fazla",ic:"scale",tone:"violet",cur:Math.max(0,gain),goal:1,unit:"kg"},
+    {id:"gain3",name:"+3 kg",desc:"İlk tartından 3 kg fazla",ic:"scale",tone:"violet",cur:Math.max(0,gain),goal:3,unit:"kg"},
+    {id:"target",name:"Hedefe vardın",desc:p.targetKg?p.targetKg+" kg hedef kilona ulaş":"Ayarlar'dan hedef kilo belirle",ic:"trophy",tone:"violet",cur:w&&p.targetKg?Math.min(w,p.targetKg):0,goal:p.targetKg||1,unit:"kg",off:!p.targetKg},
+    {id:"pr1",name:"Rekor kırıcı",desc:"Bir harekette rekorunu geç",ic:"trophy",tone:"green",cur:prCount,goal:1},
+    {id:"pr10",name:"Rekor makinesi",desc:"10 kez rekor kır",ic:"trophy",tone:"green",cur:prCount,goal:10},
+    {id:"backup",name:"Güvende",desc:"İlk yedek dosyanı indir",ic:"download",tone:"blue",cur:lsGet("gd:lastbackup")?1:0,goal:1}
+  ].map(b=>Object.assign(b,{earned:!b.off&&b.cur>=b.goal}))}
+function badgeTile(b){const pct=Math.min(100,b.goal?b.cur/b.goal*100:0);const when=(S.profile.badges||{})[b.id];
+  return `<div class="bdg ${b.earned?"on "+b.tone:""}" title="${esc(b.desc)}"><span class="bdg-i">${ico(b.ic)}</span><b>${esc(b.name)}</b><small>${b.earned?(when?fmtD(when):"kazanıldı"):esc(b.desc)}</small>${b.earned?"":`<span class="bdg-p"><span style="width:${pct}%"></span></span><small class="num">${b.unit?r1(b.cur):b.cur} / ${b.goal}${b.unit?" "+b.unit:""}</small>`}</div>`}
+/* kutlama katmanı */
+function confetti(){if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;const c=document.createElement("canvas");c.className="confetti";document.body.appendChild(c);
+  const W=c.width=innerWidth*devicePixelRatio,H=c.height=innerHeight*devicePixelRatio,ctx=c.getContext("2d");const cols=["#e11d48","#f97316","#10b981","#0ea5e9","#7c3aed","#fbbf24"];
+  const ps=Array.from({length:120},()=>({x:W/2+(Math.random()-.5)*W*.3,y:H*.35,vx:(Math.random()-.5)*16*devicePixelRatio,vy:(-Math.random()*14-6)*devicePixelRatio,r:(4+Math.random()*5)*devicePixelRatio,c:cols[Math.random()*cols.length|0],a:Math.random()*6}));
+  let f=0;(function step(){ctx.clearRect(0,0,W,H);ps.forEach(p=>{p.vy+=.45*devicePixelRatio;p.x+=p.vx;p.y+=p.vy;p.vx*=.99;p.a+=.2;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.a);ctx.fillStyle=p.c;ctx.fillRect(-p.r/2,-p.r/4,p.r,p.r/2);ctx.restore()});
+    if(++f<150)requestAnimationFrame(step);else c.remove()})()}
+function showCelebrate(html){const el=$("#celebrate");el.innerHTML=`<div class="cb-back" data-cbclose="1"></div><div class="cb-card" role="dialog" aria-modal="true">${html}<button class="btn primary" data-cbclose="1">Devam</button></div>`;el.hidden=false;confetti()}
+let celebrateQueue=[];
+function pumpCelebrate(){if(!$("#celebrate").hidden||!celebrateQueue.length||active)return;showCelebrate(celebrateQueue.shift())}
+function stars(n){return `<div class="cb-stars">${[1,2,3].map(i=>`<span class="${i<=n?"on":""}">★</span>`).join("")}</div>`}
+function periodSummaryHTML(kind,from,to,label){const t=targets(),p=S.profile;let wo=0,water=0,prot=0,kcal=0,days=0;
+  for(let d=from;d<to;d=addDays(d,1)){days++;const v=dayRO(d);if(!v)continue;wo+=(v.workouts||[]).length;if((v.water||0)>=p.waterGoal)water++;const fs=v.foods||[];if(fs.length){if(fs.reduce((a,f)=>a+(+f.kcal||0),0)>=t.kcal*.95)kcal++;if(fs.reduce((a,f)=>a+(+f.p||0),0)>=t.protein)prot++}}
+  const ws=p.weights.filter(x=>x.d>=from&&x.d<to);const dw=ws.length>=2?r1(ws[ws.length-1].kg-ws[0].kg):null;
+  const woGoal=kind==="week"?wkTarget():Math.round(wkTarget()*days/7);const score=(Math.min(1,wo/Math.max(1,woGoal))*2+Math.min(1,kcal/(days*.7))+Math.min(1,water/(days*.7)))/4;
+  const st=score>=.8?3:score>=.5?2:score>=.2?1:0;const earned=Object.entries(p.badges||{}).filter(([_,d])=>d>=from&&d<to).map(([id])=>badgeList().find(b=>b.id===id)).filter(Boolean);
+  const msg=st===3?(kind==="week"?"Harika bir hafta!":"Harika bir ay!"):st===2?"Güzel gidiyorsun!":st===1?"İyi başlangıç, devam!":"Yeni "+(kind==="week"?"hafta":"ay")+", yeni başlangıç!";
+  return `<div class="cb-eyebrow">${label}</div><div class="cb-title">${msg}</div>${stars(st)}
+    <div class="cb-grid"><div><b class="num">${wo}<small>/${woGoal}</small></b><span>idman</span></div><div><b class="num">${kcal}<small>/${days}</small></b><span>kalori hedefi</span></div><div><b class="num">${water}<small>/${days}</small></b><span>su hedefi</span></div><div><b class="num">${dw==null?"—":(dw>0?"+":"")+dw}<small>${dw==null?"":" kg"}</small></b><span>kilo</span></div></div>
+    ${earned.length?`<div class="cb-badges">${earned.map(badgeTile).join("")}</div>`:""}
+    <div class="small muted">${st>=2?"Aynen devam. ":""}${kcal<days*.7?"Kalori hedefini daha çok günde tuttursan kilo daha hızlı gelir. ":""}${wo<woGoal?"Planındaki idman günlerine sadık kalmaya çalış. ":""}</div>`}
+const AYLAR_U=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+function checkBadgesAndSummaries(){if(!S.profile||active)return;const p=S.profile;p.badges=p.badges||{};const td=today();let changed=false;
+  const hasData=allDays().length>0||p.weights.length>0;
+  const nb=badgeList().filter(b=>b.earned&&!p.badges[b.id]);
+  if(nb.length){nb.forEach(b=>p.badges[b.id]=td);changed=true;
+    celebrateQueue.push(`<div class="cb-eyebrow">${nb.length>1?nb.length+" yeni rozet":"Yeni rozet"}</div><div class="cb-title">Tebrikler!</div><div class="cb-badges">${nb.map(badgeTile).join("")}</div>`)}
+  const ws=weekStart(td);if(!p.lastWeekSum){p.lastWeekSum=ws;changed=true}
+  else if(p.lastWeekSum<ws){const prev=addDays(ws,-7);p.lastWeekSum=ws;changed=true;if(hasData&&allDays().some(([d])=>d>=prev&&d<ws))celebrateQueue.push(periodSummaryHTML("week",prev,ws,"Geçen hafta · "+fmtD(prev)+" – "+fmtD(addDays(ws,-1))))}
+  const ms=td.slice(0,7);if(!p.lastMonthSum){p.lastMonthSum=ms;changed=true}
+  else if(p.lastMonthSum<ms){const pm=p.lastMonthSum;p.lastMonthSum=ms;changed=true;const from=pm+"-01",to=ms+"-01";if(hasData&&allDays().some(([d])=>d>=from&&d<to))celebrateQueue.push(periodSummaryHTML("month",from,to,AYLAR_U[+pm.slice(5,7)-1]+" özeti"))}
+  if(changed)mark("profile");pumpCelebrate()}
+
 /* ---------- kaldırış geçmişi ---------- */
 function allExercises(){const m={};PROGRAM.concat(LEGACY_PLANS.gym.A,LEGACY_PLANS.gym.B).forEach(e=>{if(e[4]!=="sn"&&!m[e[0]])m[e[0]]={k:e[0],name:e[1],unit:e[4]==="kg"?"kg":"vücut"}});
   Object.entries(S.lifts.ex).forEach(([k,v])=>{if(!m[k])m[k]={k,name:v.name,unit:v.unit||"kg"}});return Object.values(m)}
@@ -1554,7 +1654,7 @@ function vLifts(){
 }
 function refreshLiftChart(){const el=$("#lf-chart");if(el&&S.lifts.start)el.innerHTML=liftChart()}
 
-let progEx=null, progRange="all";
+let progEx=null, progRange="all", badgeAll=false;
 function dayStats(d){const v=dayRO(d);if(!v)return null;const k=(v.foods||[]).reduce((a,f)=>a+(+f.kcal||0),0),p=(v.foods||[]).reduce((a,f)=>a+(+f.p||0),0);
   return {k,p,w:v.water||0,wo:(v.workouts||[]).length,logged:(v.foods||[]).length>0}}
 function periodStats(from,to){let wo=0,kS=0,pS=0,kN=0,wS=0,n=0;
@@ -1610,6 +1710,12 @@ function vProg(){
       :`<div class="pj-sub">Henüz tartı kaydı yok. Bugün ekranından ilk kilonu gir, yolculuğun burada başlasın.</div>`}
   </div>
 
+  ${(()=>{const bl=badgeList();const got=bl.filter(x=>x.earned);const next=bl.filter(x=>!x.earned&&!x.off).sort((a,b)=>b.cur/b.goal-a.cur/a.goal);const show=badgeAll?bl:got.concat(next.slice(0,3));
+    return `<div class="card">${hd("trophy","Rozetler","b-amber",`<span class="small muted num">${got.length} / ${bl.length}</span>`)}
+      <div class="bdg-grid">${show.map(badgeTile).join("")}</div>
+      <button class="link" data-bdgall="1" style="align-self:flex-start">${badgeAll?"Daha az göster":"Tüm rozetleri göster"}</button>
+      <div class="row"><button class="btn sm ghost grow" data-sum="week">Bu haftanın özeti</button><button class="btn sm ghost grow" data-sum="month">Bu ayın özeti</button></div>
+      <div class="small muted">Her yeni haftanın ve ayın ilk açılışında geçen dönemin özeti ve tebrik kartı otomatik gelir.</div></div>`})()}
   ${b?`<div class="card">
     ${hd("scale","Vücut kitle indeksi","b-green",`<b class="num">${r1(b)}</b>`)}
     <div class="bmi"><div class="bmi-bar"><span class="z1"></span><span class="z2"></span><span class="z3"></span></div><i style="left:${bPos}%"></i></div>
@@ -1768,6 +1874,7 @@ function render(){
   if(tab==="work"&&active)tickTimer();
   if(tab==="coach"){const c=$("#chat");if(c&&c.lastElementChild&&S.chat.msgs.length)c.lastElementChild.scrollIntoView({block:"nearest"})}
   document.querySelectorAll("#view [data-ks]").forEach(e=>{if(_ks[e.dataset.ks])e.scrollLeft=_ks[e.dataset.ks]});
+  clearTimeout(render._bt);render._bt=setTimeout(checkBadgesAndSummaries,500);
 }
 
 /* ---------- olaylar ---------- */
@@ -1856,6 +1963,9 @@ document.addEventListener("click",async ev=>{
   if(b.id==="btn-import"){const io=$("#io");io.hidden=false;$("#io-actions").hidden=false;io.value="";io.placeholder="Yedek metnini buraya yapıştır";io.focus();return}
   if(b.id==="btn-copy"){const io=$("#io");try{await navigator.clipboard.writeText(io.value);toast("Kopyalandı")}catch(e){io.select();toast("Metni seçip kopyala")}return}
   if(b.id==="btn-import-go"){try{restoreFrom(JSON.parse($("#io").value))}catch(e){toast("Yedek metni okunamadı")}return}
+  if(ds.cbclose){$("#celebrate").hidden=true;$("#celebrate").innerHTML="";setTimeout(pumpCelebrate,350);return}
+  if(ds.sum){const td=today();if(ds.sum==="week"){const ws=weekStart(td);showCelebrate(periodSummaryHTML("week",ws,addDays(ws,7),"Bu hafta · "+fmtD(ws)+" – "+fmtD(addDays(ws,6))))}else{const ms=td.slice(0,7);const nm=ms.slice(5,7)==="12"?(+ms.slice(0,4)+1)+"-01":ms.slice(0,4)+"-"+String(+ms.slice(5,7)+1).padStart(2,"0");showCelebrate(periodSummaryHTML("month",ms+"-01",nm+"-01",AYLAR_U[+ms.slice(5,7)-1]+" (şu ana kadar)"))}return}
+  if(ds.bdgall){badgeAll=!badgeAll;render();return}
   if(b.id==="btn-dl"){downloadBackup();return}
   if(b.id==="btn-upd"){applyUpdate();return}
   if(b.id==="btn-chkupd"){checkUpdate(true);return}
@@ -1963,7 +2073,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&sheetOpen)closeShee
 })();
 
 /* yeni sürüm kontrolü (bağımsız sürüm) */
-const APP_V="2026.09.30-0121";
+const APP_V="2026.09.30-0126";
 async function checkUpdate(manual){if(inViewer()||APP_V.startsWith("__"))return;
   try{const r=await fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"});const t=await r.text();const m=t.match(/const APP_V="([^"]+)"/);
     if(m&&m[1]!==APP_V){const el=$("#upd");el.innerHTML=`<span class="grow">Yeni sürüm hazır</span><button class="btn sm" id="btn-upd">Güncelle</button>`;el.hidden=false;el.dataset.v=m[1]}
