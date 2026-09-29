@@ -586,6 +586,12 @@ body.noscroll{overflow:hidden}
 #btn-dl svg,.file-btn svg{width:18px;height:18px}
 .file-btn:focus-within{outline:2px solid var(--accent);outline-offset:2px}
 #restore-confirm{gap:8px}
+.bk-nag{display:flex;align-items:center;gap:12px;background:var(--amber-soft);border-radius:18px;padding:12px 14px}
+.bk-nag b{font-size:14.5px}
+.bk-nag .badge{background:var(--surface)}
+.bk-nag .badge svg{width:18px;height:18px}
+.bk-act{display:flex;flex-direction:column;align-items:center;gap:2px;flex:none}
+.bk-act .link{padding:2px 6px;font-size:12.5px}
 #view>*{animation:rise .35s ease both}
 @keyframes rise{from{transform:translateY(6px)}to{transform:none}}
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
@@ -1128,7 +1134,7 @@ function vToday(){
     <div class="dots">${wk.map((x,i)=>`<span class="${x.on?"on":sched()[i]?"plan":"rest"} ${x.today?"today":""}" title="${fmtD(x.d)} · ${sched()[i]?"idman":"dinlenme"}">${"PSÇPCCP"[i]}</span>`).join("")}</div>
   </div>
 
-  ${todayClassStrip()}
+  ${backupNag()}${todayClassStrip()}
   <div class="card goals">
     <div class="g-head"><div style="min-width:0"><div class="g-eyebrow">Bugünün hedefleri</div><div class="g-title">${goalHeadline(kcal,prot,v.water,t,p)}</div></div><button class="btn sm ghost" data-go="food">+ Yemek</button></div>
     <div class="g-body">
@@ -1368,6 +1374,11 @@ function sessionsOn(dayIdx){const out=[];S.school.courses.forEach(c=>{const sl=c
   const rooms=[...new Set(sl.map(s=>s.room))];out.push({c,i:0,s:{d:dayIdx,s:sl[0].s,e:sl[sl.length-1].e,h:sl.reduce((a,s)=>a+s.h,0),room:rooms.join(", ")}})});return out.sort((a,b)=>toMin(a.s.s)-toMin(b.s.s))}
 function absTone(c){const u=absUsed(c),l=absLimit(c)||1,r=u/l;return u>l?"over":r>=.8?"r":r>=.5?"a":"g"}
 let schDay=null, schEdit=null, schDel=null;
+const BK_DAYS=21;
+function backupNag(){if(cloud)return "";const td=today();let first=lsGet("gd:firstuse");if(!first){first=td;lsSet("gd:firstuse",td)}
+  const sn=lsGet("gd:bksnooze");if(sn&&sn>td)return "";const last=lsGet("gd:lastbackup");const n=diffDays(last||first,td);if(n<BK_DAYS)return "";
+  return `<div class="bk-nag"><span class="badge b-amber">${ico("download")}</span><div class="grow" style="min-width:0"><b>Yedek alma zamanı</b><div class="small muted">${last?"Son yedeğin "+n+" gün önce.":"Henüz hiç yedek almadın."} Kayıtların sadece bu telefonda duruyor.</div></div>
+    <div class="bk-act"><button class="btn sm primary" id="btn-dl">Yedek al</button><button class="link muted" data-bksnooze="1">Sonra</button></div></div>`}
 function nextClassDay(fromIdx){for(let i=1;i<=7;i++){const di=(fromIdx+i)%7;const l=sessionsOn(di);if(l.length)return {di,i,x:l[0]}}return null}
 function todayClassStrip(){if(!S.school||!S.school.courses.length)return "";const td=today(),di=wd(td);const now=new Date(),nm=now.getHours()*60+now.getMinutes();
   const list=di<7?sessionsOn(di):[];const cur=list.find(x=>nm>=toMin(x.s.s)&&nm<toMin(x.s.e));const nxt=list.find(x=>toMin(x.s.s)>nm);
@@ -1671,7 +1682,7 @@ function vSettings(){
     <button class="btn primary" id="btn-dl">${ico("download")}Yedek dosyasını indir</button>
     <label class="btn ghost file-btn">${ico("upload")}Yedek dosyasından geri yükle<input type="file" id="in-restore" accept=".json,application/json" hidden></label>
     <div id="restore-confirm" class="card soft-red" hidden></div>
-    <div class="small muted" id="bk-last">${(()=>{const l=lsGet("gd:lastbackup");if(!l)return "Henüz yedek dosyası indirmedin.";const n=diffDays(l,today());return "Son yedek: "+(n===0?"bugün":n+" gün önce")+(n>=14?" · yeni bir yedek almanın zamanı geldi":"")})()}</div>
+    <div class="small muted" id="bk-last">${(()=>{const l=lsGet("gd:lastbackup");if(!l)return "Henüz yedek dosyası indirmedin.";const n=diffDays(l,today());return "Son yedek: "+(n===0?"bugün":n+" gün önce")+(n>=BK_DAYS?" · yeni bir yedek almanın zamanı geldi":"")+" · 3 haftada bir hatırlatılır"})()}</div>
     <details><summary class="small">Metin olarak kopyala / yapıştır</summary>
     <div class="row" style="margin-top:8px"><button class="btn ghost grow" id="btn-export">Yedeği göster</button><button class="btn ghost grow" id="btn-import">Yedeği geri yükle</button></div></details>
     <textarea id="io" hidden aria-label="Yedek verisi"></textarea>
@@ -1685,7 +1696,7 @@ function restoreFrom(o){if(!o||!o.profile||!o.months)throw new Error("bad");S.pr
   mark("profile");Object.keys(S.months).forEach(mark);toast("Yedek yüklendi");render()}
 let pendingRestore=null;
 async function downloadBackup(){const name="guc-defteri-yedek-"+today()+".json";const txt=JSON.stringify(backupData());const blob=new Blob([txt],{type:"application/json"});
-  const done=()=>{lsSet("gd:lastbackup",today());toast("Yedek dosyası indirildi");const l=$("#bk-last");if(l)l.textContent="Son yedek: bugün"};
+  const done=()=>{lsSet("gd:lastbackup",today());toast("Yedek dosyası indirildi");const l=$("#bk-last");if(l)l.textContent="Son yedek: bugün";if(tab==="today")render()};
   if(inViewer()){let dl=null;try{dl=await window.claude.use("downloads")}catch(e){}
     if(!dl){toast("Bu görünümde dosya indirilemiyor. Metin olarak kopyala seçeneğini kullan.");return}
     try{const r=await dl.save({filename:name,data:blob});if(r&&r.status==="saved")done()}catch(e){if(e&&e.code!=="cancelled"&&e.code!=="declined")toast("Yedek indirilemedi. Metin olarak kopyala seçeneğini kullan.")}return}
@@ -1737,6 +1748,7 @@ document.addEventListener("click",async ev=>{
   if(ds.ladd){const e=ensureLiftEx(liftSel);const r=e.rows.slice().sort((a,b)=>a.wk-b.wk);const l=r[r.length-1];e.rows.push(l?{wk:(+l.wk||0)+1,w:l.w,r:l.r,s:l.s}:{wk:1,w:"",r:"",s:3});mark("lifts");render();
     const i=e.rows.length-1;setTimeout(()=>{const el=$("#lf-w-"+i)||$("#lf-r-"+i);if(el)el.focus()},30);return}
   if(ds.ldel){const e=S.lifts.ex[liftSel];if(e){e.rows.splice(+ds.ldel,1);mark("lifts");render()}return}
+  if(ds.bksnooze){lsSet("gd:bksnooze",addDays(today(),3));render();toast("3 gün sonra tekrar hatırlatılacak");return}
   if(ds.sday2!==undefined){schDay=+ds.sday2;render();return}
   if(ds.att){const k=ds.att;S.school.log[k]=S.school.log[k]===ds.v?undefined:ds.v;if(!S.school.log[k])delete S.school.log[k];mark("school");
     if(ds.v==="a"&&S.school.log[k]==="a"){const c=S.school.courses.find(c=>c.id===k.split("|")[1]);if(c){const l=absLimit(c)-absUsed(c);toast(c.name+": "+(l<0?"sınır "+Math.abs(l)+" saat aşıldı":l+" saat hakkın kaldı"))}}render();return}
