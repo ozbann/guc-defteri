@@ -1,5 +1,5 @@
-<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#e11d48"><style>html{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
-<title>Güç Defteri</title>
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="ozben"><meta name="application-name" content="ozben"><meta name="theme-color" content="#e11d48"><style>html{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
+<title>ozben</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
@@ -610,7 +610,7 @@ body.noscroll{overflow:hidden}
 <div class="app" id="app">
   <header class="top">
     <div>
-      <div class="brand"><i aria-hidden="true"></i>Güç Defteri</div>
+      <div class="brand"><i aria-hidden="true"></i>ozben</div>
       <div class="sub" id="today-label"></div>
     </div>
     <button class="iconbtn" id="btn-settings" aria-label="Ayarlar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
@@ -1726,7 +1726,7 @@ function restoreFrom(o){if(!o||!o.profile||!o.months)throw new Error("bad");S.pr
   if(o.lifts&&o.lifts.ex){S.lifts=o.lifts;mark("lifts")}if(o.school&&o.school.courses){S.school=migrateSchool(o.school);delete S.school._mig;mark("school")}if(o.chat&&Array.isArray(o.chat.msgs)){S.chat=o.chat;mark("chat")}
   mark("profile");Object.keys(S.months).forEach(mark);toast("Yedek yüklendi");render()}
 let pendingRestore=null;
-async function downloadBackup(){const name="guc-defteri-yedek-"+today()+".json";const txt=JSON.stringify(backupData());const blob=new Blob([txt],{type:"application/json"});
+async function downloadBackup(){const name="ozben-yedek-"+today()+".json";const txt=JSON.stringify(backupData());const blob=new Blob([txt],{type:"application/json"});
   const done=()=>{lsSet("gd:lastbackup",today());toast("Yedek dosyası indirildi");const l=$("#bk-last");if(l)l.textContent="Son yedek: bugün";if(tab==="today")render()};
   if(inViewer()){let dl=null;try{dl=await window.claude.use("downloads")}catch(e){}
     if(!dl){toast("Bu görünümde dosya indirilemiyor. Metin olarak kopyala seçeneğini kullan.");return}
@@ -1850,7 +1850,7 @@ document.addEventListener("change",async ev=>{const t=ev.target;
   if(t.id==="in-restore"&&t.files&&t.files[0]){const f=t.files[0];t.value="";const c=$("#restore-confirm");
     try{const o=JSON.parse(await f.text());if(!o.profile||!o.months)throw 0;pendingRestore=o;const days=Object.values(o.months).reduce((a,m)=>a+Object.keys(m.days||{}).length,0);
       c.innerHTML=`<b>Bu yedek yüklensin mi?</b><div class="small">${o.savedAt?"Yedek tarihi: "+fmtDY(o.savedAt.slice(0,10))+" · ":""}${days} günlük kayıt${o.profile.weights?", "+o.profile.weights.length+" tartı":""}. Bu cihazdaki şu anki verilerin yerine geçecek.</div><div class="row"><button class="btn primary" id="btn-restore-yes">Yükle</button><button class="btn ghost" id="btn-restore-no">Vazgeç</button></div>`;c.hidden=false}
-    catch(e){toast("Bu dosya bir Güç Defteri yedeği değil")}return}
+    catch(e){toast("Bu dosya bir ozben yedeği değil")}return}
   if(t.id==="lf-start"){S.lifts.start=t.value||null;mark("lifts");render();return}
   if((t.id==="in-cam"||t.id==="in-gal")&&t.files&&t.files[0]){const f=t.files[0];
     try{setPhoto(await shrinkImage(f));aiFoodPreview=null;render()}catch(e){const el=$("#ai-food-err");if(el)el.textContent=e.message}return}
