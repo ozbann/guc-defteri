@@ -136,9 +136,9 @@ label.f{display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--
 .warn b{color:var(--accent)}
 .warn ul{margin:8px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
 nav.tabs{position:fixed;left:0;right:0;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:10;padding-inline:14px;pointer-events:none}
-nav.tabs .in{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(6,1fr);gap:2px;background:var(--glass);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);border-radius:26px;padding:6px;box-shadow:0 12px 36px -12px rgba(0,0,0,.35),inset 0 0 0 1px var(--line);pointer-events:auto}
-nav.tabs button{border:0;background:transparent;color:var(--muted);padding:8px 2px;border-radius:20px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:700;cursor:pointer;transition:all .18s}
-nav.tabs button svg{width:22px;height:22px}
+nav.tabs .in{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--glass);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);border-radius:26px;padding:6px;box-shadow:0 12px 36px -12px rgba(0,0,0,.35),inset 0 0 0 1px var(--line);pointer-events:auto}
+nav.tabs button{border:0;background:transparent;color:var(--muted);padding:8px 0;border-radius:18px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;letter-spacing:-.1px;min-width:0;white-space:nowrap;overflow:hidden;font-weight:700;cursor:pointer;transition:all .18s}
+nav.tabs button svg{width:21px;height:21px}
 nav.tabs button.on{color:var(--accent);background:var(--accent-soft)}
 .chat{display:flex;flex-direction:column;gap:10px}
 .msg{max-width:88%;padding:11px 14px;border-radius:20px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14.5px}
@@ -577,6 +577,15 @@ body.noscroll{overflow:hidden}
 .crs .row .link{padding:2px 0}
 .crs-ed{display:flex;flex-direction:column;gap:8px}
 .sch-set summary{margin-top:4px}
+.ms{background:var(--surface);border-radius:18px;box-shadow:var(--shadow);padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.ms-h{display:flex;align-items:center;gap:10px;border:0;background:none;color:var(--fg);font:inherit;padding:0;cursor:pointer;text-align:left}
+.ms-h b{font-size:14.5px}.ms-h .small{margin-left:auto}.ms-h .badge svg{width:18px;height:18px}
+.ms-row{display:flex;flex-wrap:wrap;gap:6px}.ms-row::-webkit-scrollbar{display:none}
+.ms-c{flex:0 0 auto;max-width:170px;display:flex;align-items:center;gap:6px;border:0;border-radius:999px;padding:7px 12px 7px 8px;background:var(--sunk);color:var(--fg);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.ms-k{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:11px;flex:0 0 auto}
+.ms-c.on{background:color-mix(in srgb,var(--good) 16%,transparent)}.ms-c.on .ms-k{background:var(--good);border-color:var(--good);color:#fff}
+.ms-c.iv{padding-left:12px}.ms-c small{color:var(--muted);font-weight:700}
+.ms-c.late{padding-left:12px;background:var(--accent-soft)}.ms-c.late small{color:var(--accent)}
 .cls-strip{display:flex;align-items:center;gap:12px;width:100%;border:0;background:var(--surface);color:var(--fg);border-radius:18px;padding:12px 14px;box-shadow:var(--shadow);cursor:pointer;text-align:left;font:inherit}
 .cls-strip b{font-size:14.5px}
 .cls-strip .badge svg{width:18px;height:18px}
@@ -942,8 +951,7 @@ function vMeds(){
     <div class="small muted" id="m2-sum"></div>
     <div class="row"><button class="btn primary grow">${em?"Değişiklikleri kaydet":"Listeye ekle"}</button>${medEdit?`<button type="button" class="btn ghost" data-mcancel="1">Vazgeç</button>`:""}</div>
   </form>`;
-  return `<div class="row between"><button class="btn sm ghost" data-go="today">← Bugün</button>${medEdit?"":`<button class="btn sm primary" data-medit="new">+ Yeni ilaç</button>`}</div>
-  <h2>İlaç ve vitaminler</h2>
+  return `<div class="row between"><h2 style="margin:0;font-size:24px">İlaçlar</h2>${medEdit?"":`<button class="btn sm primary" data-medit="new">+ Yeni ilaç</button>`}</div>
   ${medEdit?form:""}
   ${meds.length?`<div class="tiles three">
     <div class="tile"><span class="tl">Aktif</span><b class="num">${active.length}</b></div>
@@ -1088,14 +1096,15 @@ const IC={
   food:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 11h16a8 8 0 0 1-16 0zM8 3c0 2 2 2 2 4M13 3c0 2 2 2 2 4"/></svg>',
   prog:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18M5 16l5-5 3 3 6-7"/></svg>',
   school:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c3 2 9 2 12 0v-5"/></svg>',
+  meds:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8.5" width="18" height="7" rx="3.5" transform="rotate(-45 12 12)"/><path d="M9.5 9.5l5 5"/></svg>',
   coach:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 10h8M8 13h5"/></svg>'
 };
-const TABS=[["today","Bugün"],["work","İdman"],["food","Beslenme"],["prog","İlerleme"],["school","Dersler"],["coach","Koç"]];
+const TABS=[["today","Bugün"],["meds","İlaç"],["work","İdman"],["food","Yemek"],["prog","İlerleme"],["school","Dersler"],["coach","Koç"]];
 let tab=(()=>{const h=(location.hash||"").slice(1);return TABS.some(t=>t[0]===h)?h:(lsGet("gd:tab")||"today")})();
-if(!TABS.some(t=>t[0]===tab)&&tab!=="settings"&&tab!=="lifts"&&tab!=="meds")tab="today";
+if(!TABS.some(t=>t[0]===tab)&&tab!=="settings"&&tab!=="lifts")tab="today";
 
 function renderTabs(){
-  $("#tabs").innerHTML=TABS.map(([k,l])=>`<button data-tab="${k}" class="${tab===k||(tab==="lifts"&&k==="prog")||(tab==="meds"&&k==="today")?"on":""}" aria-current="${tab===k?"page":"false"}">${IC[k]}<span>${l}</span></button>`).join("");
+  $("#tabs").innerHTML=TABS.map(([k,l])=>`<button data-tab="${k}" class="${tab===k||(tab==="lifts"&&k==="prog")?"on":""}" aria-current="${tab===k?"page":"false"}">${IC[k]}<span>${l}</span></button>`).join("");
 }
 function go(t){tab=t;lsSet("gd:tab",t);render();window.scrollTo(0,0)}
 
@@ -1206,15 +1215,7 @@ function vToday(){
   return `
   <h2>Merhaba${p.name?", "+esc(p.name.split(" ")[0]):""}</h2>
   ${firstRun?`<div class="card hot"><h3>Başlarken</h3><div>Önce Ayarlar'dan yaşını, kilonu, antrenman yerini ve kullandığın ilaçları gir. Kalori, protein ve ilaç takibi bunlara göre hesaplanır.</div><button class="btn primary" data-go="settings">Profili doldur</button></div>`:""}
-  <div class="card">
-    ${hd("pill","İlaç ve vitaminler","b-green",`<button class="btn sm ghost" data-go="meds">Tümü</button>`)}
-    ${meds.length?`<div class="list">${meds.map(m=>({m,i:medInfo(m)})).filter(x=>!x.i.finished).map(({m,i})=>{
-      const isInt=m.type==="interval";const pct=isInt?(i.cycle||0):i.dur&&i.started?i.pct:(i.takenToday?1:0);
-      const act=(i.start&&!i.started)?`<span class="pill">${i.startsIn} gün sonra</span>`:isInt?`<button class="btn sm ${i.due?"primary":"ghost"}" data-shot="${m.id}">Yapıldı</button>`
-        :`<button class="check ${i.takenToday?"on":""}" data-med="${m.id}" aria-label="${esc(m.name)} bugün alındı">${i.takenToday?"✓":""}</button>`;
-      return `<div class="md-mini ${isInt?(i.until!=null&&i.until<=0?"r":"v"):"g"}"><div class="grow" style="min-width:0"><div class="md-mn">${esc(m.name)}</div><div class="small muted">${esc(medLine(m,i))}</div><div class="md-mb"><span style="width:${(pct*100).toFixed(0)}%"></span></div></div>${act}</div>`}).join("")}</div>`
-      :`<div class="empty">Henüz ekli değil. Vitaminlerini ve iğneni başlangıç tarihiyle ekle; bugün alman gerekenler burada görünür.</div><button class="btn ghost" data-go="meds">İlaç ekle</button>`}
-  </div>
+  ${medStrip()}
   <div class="hero ${!active&&!v.workouts.length&&!isTrainDay(d)?"rest-hero":""}">
     <div class="row between"><h3>${active||v.workouts.length||isTrainDay(d)?"İdman günü":"Dinlenme günü"}</h3><span class="pill">${wkCount}/${wkTarget()} bu hafta</span></div>
     ${active?`<div><div class="big">İdman</div><div style="opacity:.85;margin-top:6px">Devam eden antrenmanın var</div></div><button class="btn" data-go="work">Antrenmana dön</button>`
@@ -1472,6 +1473,12 @@ function backupNag(){if(cloud)return "";const td=today();let first=lsGet("gd:fir
   return `<div class="bk-nag"><span class="badge b-amber">${ico("download")}</span><div class="grow" style="min-width:0"><b>Yedek alma zamanı</b><div class="small muted">${last?"Son yedeğin "+n+" gün önce.":"Henüz hiç yedek almadın."} Kayıtların sadece bu telefonda duruyor.</div></div>
     <div class="bk-act"><button class="btn sm primary" id="btn-dl">Yedek al</button><button class="link muted" data-bksnooze="1">Sonra</button></div></div>`}
 function nextClassDay(fromIdx){for(let i=1;i<=7;i++){const di=(fromIdx+i)%7;const l=sessionsOn(di);if(l.length)return {di,i,x:l[0]}}return null}
+function medStrip(){const meds=(S.profile.meds||[]).map(m=>({m,i:medInfo(m)})).filter(x=>!x.i.finished&&(!x.i.start||x.i.started||x.m.type==="interval"));
+  if(!meds.length)return `<button class="cls-strip ms-empty" data-go="meds"><span class="badge b-green">${IC.meds}</span><span class="grow small muted">İlaç ekle</span><span class="cs-chev" aria-hidden="true">›</span></button>`;
+  const due=meds.filter(x=>x.i.due).length;
+  return `<div class="ms"><button class="ms-h" data-go="meds"><span class="badge b-green">${IC.meds}</span><b>İlaçlar</b><span class="small muted">${due?due+" bekliyor":"hepsi tamam"}</span><span class="cs-chev" aria-hidden="true">›</span></button>
+    <div class="ms-row">${meds.map(({m,i})=>{if(m.type==="interval"){const late=i.until!=null&&i.until<=0;return `<button class="ms-c ${late?"late":"iv"}" data-${late?"shot":"go"}="${late?m.id:"meds"}"><span class="clip">${esc(m.name)}</span><small class="num">${i.until==null?"?":late?(i.until<0?Math.abs(i.until)+"g gecikti":"bugün"):i.until+" gün"}</small></button>`}
+      return `<button class="ms-c ${i.takenToday?"on":""}" data-med="${m.id}" aria-label="${esc(m.name)} bugün alındı"><span class="ms-k">${i.takenToday?"✓":""}</span><span class="clip">${esc(m.name)}</span></button>`}).join("")}</div></div>`}
 function todayClassStrip(){if(!S.school||!S.school.courses.length)return "";const td=today(),di=wd(td);const now=new Date(),nm=now.getHours()*60+now.getMinutes();
   const list=di<7?sessionsOn(di):[];const cur=list.find(x=>nm>=toMin(x.s.s)&&nm<toMin(x.s.e));const nxt=list.find(x=>toMin(x.s.s)>nm);
   const nd=nextClassDay(di);const ndTxt=nd?(nd.i===1?"Yarın":GUN_U[nd.di])+" "+nd.x.s.s+" · "+esc(nd.x.c.name):"";
@@ -2096,7 +2103,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&sheetOpen)closeShee
 })();
 
 /* yeni sürüm kontrolü (bağımsız sürüm) */
-const APP_V="2026.09.30-0149";
+const APP_V="2026.09.30-0152";
 async function checkUpdate(manual){if(inViewer()||APP_V.startsWith("__"))return;
   try{const r=await fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"});const t=await r.text();const m=t.match(/const APP_V="([^"]+)"/);
     if(m&&m[1]!==APP_V){const el=$("#upd");el.innerHTML=`<span class="grow">Yeni sürüm hazır</span><button class="btn sm" id="btn-upd">Güncelle</button>`;el.hidden=false;el.dataset.v=m[1]}
