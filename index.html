@@ -602,6 +602,9 @@ body.noscroll{overflow:hidden}
 .gn.on .gn-i{background:var(--amber);color:#fff;font-weight:800}
 .ret{display:flex;flex-direction:column;gap:8px;background:var(--sunk);border-radius:16px;padding:12px}
 .ret .bar{height:6px}
+.g-res{font-size:13.5px;font-weight:600;border-radius:12px;padding:9px 12px}
+.g-res.ok{background:var(--good-soft);color:var(--good)}
+.g-res.bad{background:var(--accent-soft);color:var(--accent)}
 #view>*{animation:rise .35s ease both}
 @keyframes rise{from{transform:translateY(6px)}to{transform:none}}
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
@@ -1094,7 +1097,7 @@ function startWorkout(plan){
   active.ex.forEach((x,i)=>{if(sug[i].up&&x.unit==="kg"){const lw=Math.max(...(lastSets(x.k)?.sets||[]).map(s=>+s.w||0));if(lw>0)x.sets.forEach(s=>s.w=r1(lw+2.5))}});
   saveActive();render();
 }
-let watchAsk=null;
+let watchAsk=null, gTestMsg=null;
 function findWorkout(id){for(const m of Object.values(S.months))for(const [d,v] of Object.entries(m.days||{}))for(const w of (v.workouts||[]))if(w.id===id)return {w,d};return null}
 function watchLine(w){const a=w.watch;if(!a)return "";const hr=a.avg||a.max?`<span class="h">${ico("heart")}${a.avg?"ort "+a.avg:""}${a.avg&&a.max?" · ":""}${a.max?"maks "+a.max:""} bpm</span>`:"";
   return `<div class="aw">${a.kcal?`<span class="k">${ico("flame")}${a.kcal} kcal</span>`:""}${hr}</div>`}
@@ -1698,7 +1701,7 @@ function vSettings(){
     <label class="f">Gemini API anahtarı<input id="g-key" type="password" autocomplete="off" value="${esc(key)}" placeholder="AIza…"></label>
     <label class="f">Model<input id="g-model" list="g-models" value="${esc(p.geminiModel)}" placeholder="${GEMINI_MODELS[0]}"><datalist id="g-models">${GEMINI_MODELS.map(m=>`<option value="${m}">`).join("")}</datalist></label>
     <div class="row"><button class="btn grow" id="btn-gsave">Kaydet</button><button class="btn ghost grow" id="btn-gtest">Bağlantıyı test et</button></div>
-    <div class="small muted" id="g-msg">Anahtar yalnızca bu cihazda saklanır. Ücretsiz anahtarı aistudio.google.com adresinden alabilirsin.${inViewer()?" Bu sayfa güvenlik gereği dış sunuculara bağlanamadığı için burada Gemini çalışmayabilir; o durumda Claude'u seç ya da bağımsız sürümü kullan.":""}</div>
+    ${gTestMsg?`<div class="g-res ${gTestMsg.ok?"ok":"bad"}">${esc(gTestMsg.t)}</div>`:""}<div class="small muted" id="g-msg">Anahtar yalnızca bu cihazda saklanır. Ücretsiz anahtarı aistudio.google.com adresinden alabilirsin.${inViewer()?" Bu sayfa güvenlik gereği dış sunuculara bağlanamadığı için burada Gemini çalışmayabilir; o durumda Claude'u seç ya da bağımsız sürümü kullan.":""}</div>
   </div>
 
   <div class="card">
@@ -1827,7 +1830,7 @@ document.addEventListener("click",async ev=>{
   if(b.id==="btn-gsave"){lsSet("gd:gemini_key",$("#g-key").value.trim());S.profile.geminiModel=$("#g-model").value.trim()||GEMINI_MODELS[0];mark("profile");toast("Kaydedildi");return}
   if(b.id==="btn-gtest"){lsSet("gd:gemini_key",$("#g-key").value.trim());S.profile.geminiModel=$("#g-model").value.trim()||GEMINI_MODELS[0];mark("profile");
     const prevP=S.profile.aiProvider;S.profile.aiProvider="gemini";const msg=$("#g-msg");msg.textContent="Deneniyor…";
-    try{const t=await aiCall([{r:"u",t:"Tek kelimeyle 'Hazır' yaz."}]);msg.textContent="Bağlantı çalışıyor: "+t.trim().slice(0,40)}catch(e){msg.textContent=e.message;S.profile.aiProvider=prevP}
+    try{const t=await aiCall([{r:"u",t:"Tek kelimeyle 'Hazır' yaz."}]);gTestMsg={ok:true,t:"✓ Bağlantı çalışıyor ("+S.profile.geminiModel+")"}}catch(e){gTestMsg={ok:false,t:e.message};S.profile.aiProvider=prevP}
     render();return}
   if(b.id==="btn-export"){const io=$("#io");io.hidden=false;$("#io-actions").hidden=false;io.value=JSON.stringify(backupData(),null,0);return}
   if(b.id==="btn-import"){const io=$("#io");io.hidden=false;$("#io-actions").hidden=false;io.value="";io.placeholder="Yedek metnini buraya yapıştır";io.focus();return}
