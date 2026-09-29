@@ -966,20 +966,21 @@ async function aiCall(turns,{json=false,images=null}={}){
   const model0=(S.profile.geminiModel||GEMINI_MODELS[0]).trim();
   const b64s=images?await Promise.all(images.map(blobToB64)):[];
   const cont=turns.map((t,i)=>({role:t.r==="u"?"user":"model",parts:(i===turns.length-1&&b64s.length?b64s.map(d=>({inlineData:{mimeType:"image/jpeg",data:d}})):[]).concat([{text:t.t}])}));
-  const call=async model=>{let res;
-    try{res=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(model)+":generateContent",{
-      method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":key},
+  const call=async (model,viaQuery)=>{let res;
+    try{res=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(model)+":generateContent"+(viaQuery?"?key="+encodeURIComponent(key):""),{
+      method:"POST",headers:viaQuery?{"Content-Type":"application/json"}:{"Content-Type":"application/json","x-goog-api-key":key},
       body:JSON.stringify({systemInstruction:{parts:[{text:ctx}]},contents:cont,
         generationConfig:json?{responseMimeType:"application/json",temperature:.2}:{temperature:.7}})});
     }catch(e){throw new Error(inViewer()?"Bu sayfa güvenlik gereği Gemini'ye bağlanamıyor. Ayarlar'dan Claude'u seç ya da Gemini için bağımsız sürümü kullan.":"Gemini'ye bağlanılamadı. İnternet bağlantını kontrol et.")}
     return {res,data:await res.json().catch(()=>({}))}};
   let {res,data}=await call(model0);let model=model0;
+  if(res.status===401){const r0=await call(model0,true);res=r0.res;data=r0.data}
   const busy=r=>r.status===503||r.status===500||/high demand|overloaded|UNAVAILABLE/i.test((data.error&&(data.error.message+" "+data.error.status))||"");
   if(!res.ok&&busy(res)){await new Promise(r=>setTimeout(r,1500));const r1=await call(model0);res=r1.res;data=r1.data}
   const modelIssue=r=>busy(r)||r.status===404||(r.status===403&&!/API key/i.test((data.error&&data.error.message)||""))||(r.status===429&&/limit: 0|free/i.test((data.error&&data.error.message)||""));
   if(!res.ok&&modelIssue(res)){const alt=GEMINI_MODELS.find(m=>m!==model0);if(alt){const r2=await call(alt);if(r2.res.ok){res=r2.res;data=r2.data;model=alt;S.profile.geminiModel=alt;mark("profile")}}}
   if(!res.ok){const m=data&&data.error&&data.error.message||("HTTP "+res.status);
-    throw new Error(res.status===400&&/API key/i.test(m)?"API anahtarı geçersiz. Ayarlar'dan kontrol et.":res.status===404?"Model bulunamadı ("+model+"). Ayarlar'da listeden başka bir model seç.":busy(res)?"Gemini şu an çok yoğun. Birkaç dakika sonra tekrar dene.":res.status===429?"Gemini kotası doldu, biraz sonra tekrar dene.":res.status===403?"Bu anahtarın bu modele erişimi yok ("+model+"). Listeden başka model seç.":"Gemini hatası: "+m)}
+    throw new Error(res.status===401||(res.status===400&&/API key/i.test(m))?"API anahtarı geçersiz ya da silinmiş. aistudio.google.com/apikey adresinden anahtarını yeniden kopyala (gerekirse yenisini oluştur) ve Ayarlar'a yapıştır.":res.status===404?"Model bulunamadı ("+model+"). Ayarlar'da listeden başka bir model seç.":busy(res)?"Gemini şu an çok yoğun. Birkaç dakika sonra tekrar dene.":res.status===429?"Gemini kotası doldu, biraz sonra tekrar dene.":res.status===403?"Bu anahtarın bu modele erişimi yok ("+model+"). Listeden başka model seç.":"Gemini hatası: "+m)}
   const text=((data.candidates||[])[0]?.content?.parts||[]).map(p=>p.text||"").join("");
   if(!text) throw new Error("Gemini boş yanıt döndü.");
   if(json){try{return JSON.parse(text.replace(/^```(json)?|```$/g,"").trim())}catch(e){throw new Error("Yanıt okunamadı, tekrar dene.")}}
