@@ -190,7 +190,13 @@ details summary{cursor:pointer;font-weight:700;font-size:14px}
 .pp.on{box-shadow:var(--shadow),inset 0 0 0 2px var(--accent)}
 .pp.on .pp-l{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff}
 .exlist{display:flex;flex-direction:column;gap:2px}
-.exi{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px dashed var(--line)}
+.exi{display:flex;flex-direction:column;gap:8px;padding:10px 0;border-bottom:1px dashed var(--line)}
+.exi-t{display:flex;align-items:center;gap:12px}
+.exg{all:unset;box-sizing:border-box;cursor:pointer;display:flex;gap:10px;align-items:center;margin-left:40px;padding:6px;border-radius:14px;background:var(--sunk)}
+.exg img{width:112px;height:75px;object-fit:cover;border-radius:10px;flex:0 0 auto;background:#ddd}
+.exg span{font-size:12.5px;line-height:1.35;color:var(--muted)}
+.exg.sm{margin-left:0}
+.exg.big{flex-direction:column;align-items:stretch}.exg.big img{width:100%;height:auto;aspect-ratio:3/2}
 .exi:last-child{border-bottom:0}
 .exi .tag{background:var(--sunk)}
 .idx{width:28px;height:28px;border-radius:50%;background:var(--sunk);color:var(--muted);display:grid;place-items:center;font-size:12.5px;font-weight:800;flex:none;font-family:var(--f-data)}
@@ -751,6 +757,8 @@ const PDAYS={
   C:{name:"Bacak",sub:"Ön bacak · Arka bacak · Baldır",ex:[["legpress","Leg Press",4,"8-10","kg"],["legext","Leg Extension",3,"10-15","kg"],["legcurl","Lying Leg Curl",4,"8-12","kg"],["hipthrust","Hip Thrust",3,"8-12","kg"],["calf","Ayakta Calf Raise",3,"12-15","kg"],["seatcalf","Oturarak Calf Raise",3,"15-20","kg"]]}
 };
 const PROGRAM=Object.values(PDAYS).flatMap(d=>d.ex);
+const EXGIF={bench:"Sırtın hafif kavisli, kürek kemiklerin sıkı; barı göğsün alt kısmına indir, dirsekler ~45°.",incdb:"Sehpa 30°; dambılları üst göğüs hizasına indir, yukarıda birbirine yaklaştır.",ohp:"Karın ve kalça sıkı, barı çenenin önünden düz yukarı it; bele yaslanma.",lateral:"Dirsekler hafif bükük, kolları omuz hizasına kadar yana kaldır; savurma.",pushdown:"Dirsekler gövdeye yapışık kalsın, sadece ön kol hareket etsin; aşağıda halatı aç.",ohtri:"Dirsekler başının yanında sabit; ön kolları arkaya indirip yukarı uzat.",pulldown:"Göğsü dik tut, barı üst göğse çek; kürek kemiklerini aşağı-geri sıkıştır.",row:"Gövde ~45° öne eğik, sırt düz; barı karnına çek, kontrollü indir.",curl:"Dirsekler gövdede sabit; sallanmadan kaldır, yavaş indir.",hammer:"Avuçlar birbirine bakar; dirsekleri oynatmadan dambılı omza doğru kaldır.",cablecr:"Kalçayı oynatmadan gövdeni kıvırarak dirsekleri dizlere yaklaştır.",plank:"Dirsekler omuz altında, baştan topuğa düz çizgi; kalçayı düşürme, karnı sık.",legpress:"Ayaklar omuz genişliğinde; dizler içe kaçmasın, belin sehpadan kalkmasın.",legcurl:"Kalçayı sehpaya bastır; topukları kalçaya doğru çek, yavaş indir.",legext:"Sırt sehpaya yaslı; bacakları tam uzat, üstte 1 sn sık.",hipthrust:"Sırt üstü sehpada, çene içeride; kalçayı gövdeyle düz çizgi olana kadar kaldır.",calf:"Parmak uçlarında en yükseğe çık, altta tam esnet; zıplama.",seatcalf:"Dizlerin üstündeki pedle topukları kaldır, altta tam esnet."};
+function exGif(k,small){if(!EXGIF[k])return "";return `<button class="exg ${small?"sm":""}" data-exg="${k}" aria-label="Nasıl yapılır"><img src="gif/${k}.gif" alt="" loading="lazy" decoding="async"><span>${esc(EXGIF[k])}</span></button>`}
 const PLANS={gym:{A:PDAYS.A.ex,B:PDAYS.B.ex,C:PDAYS.C.ex,F:PDAYS.F.ex},home:{A:PDAYS.A.ex,B:PDAYS.B.ex,C:PDAYS.C.ex,F:PDAYS.F.ex}};
 const RET_DAYS=14;
 function retInfo(){const st=S.profile.returnStart;if(!st||S.profile.returnDone)return null;const d=diffDays(st,today());if(d>=RET_DAYS||d<0)return null;return {day:d+1,left:RET_DAYS-d,end:addDays(st,RET_DAYS)}}
@@ -1302,6 +1310,7 @@ function vWork(){
       const exDone=e.sets.length&&e.sets.every(s=>s.done);
       return `<div class="card ex ${exDone?"exdone":""}">
       <div class="ex-h"><span class="idx ${exDone?"on":""}">${exDone?"✓":ei+1}</span><div class="grow"><b>${esc(e.name)}</b><div class="small muted">${last?"Geçen "+fmtD(last.date)+": <span class=\"num\">"+last.sets.map(s=>(s.w?s.w+"×":"")+s.r).join("  ")+"</span>":"İlk kez"}</div></div><span class="tag num">${def[2]}×${def[3]}${e.unit==="sn"?" sn":""}</span></div>
+      ${exGif(e.k,true)}
       <div class="hint ${sg.up?"up":""}">${sg.up?ico("bolt"):""}<span>${esc(sg.text)}</span></div>
       <div class="setrow head"><span>Set</span><span>${wl}</span><span>${rl}</span><span></span></div>
       ${e.sets.map((s,si)=>`<div class="setrow ${s.done?"done":""}"><span class="n">${si+1}</span>
@@ -1350,7 +1359,7 @@ function vWork(){
     ${rI?`<div class="ret"><div class="row between"><b>Dönüş dönemi</b><span class="pill due num">${rI.day}. gün / ${RET_DAYS}</span></div><div class="bar"><span style="width:${(rI.day/RET_DAYS*100).toFixed(0)}%"></span></div><div class="small muted">Haftada 3 gün full body. ${fmtD(rI.end)} tarihinden itibaren (${rI.left} gün sonra) otomatik olarak İtiş / Çekiş / Bacak programına, haftada 4 güne geçilir.</div><div class="hint">${ico("bolt")}<span>Eski ağırlıklarının yaklaşık %60–70'i ile başla, her sette 2–3 tekrar yedekte bırak.</span></div></div>`
       :`<div class="seg" role="group" aria-label="Program günü">${["A","B","C"].map(k=>`<button class="${k===workPick?"on":""}" data-pick="${k}">${PDAYS[k].name}${k===curDay()?" •":""}</button>`).join("")}</div>`}
     ${hd("list",PDAYS[workPick].name+(workPick==="F"?"":" günü"),"b-red",`<span class="small muted">${workPick==="F"?"~50 dk":PDAYS[workPick].sub}</span>`)}
-    <div class="exlist">${list.map((e,i)=>`<div class="exi"><span class="idx">${i+1}</span><span class="grow">${esc(e[1])}</span><span class="tag num">${e[2]}×${e[3]}${e[4]==="sn"?" sn":""}</span></div>`).join("")}</div>
+    <div class="exlist">${list.map((e,i)=>`<div class="exi"><div class="exi-t"><span class="idx">${i+1}</span><span class="grow">${esc(e[1])}</span><span class="tag num">${e[2]}×${e[3]}${e[4]==="sn"?" sn":""}</span></div>${exGif(e[0])}</div>`).join("")}</div>
     <button class="btn primary" data-start="${workPick}">${workPick==="F"?"Full body idmanı başlat":PDAYS[workPick].name+" gününü başlat"}</button>
     ${rI?`<button class="link muted" data-retend="1" style="align-self:flex-start">Kendimi hazır hissediyorum, ana programa şimdi geç</button>`:`<div class="small muted">Sıra İtiş → Çekiş → Bacak; bitirdiğin günün ardından sıradaki otomatik seçilir (• işareti). Her sette 1–2 tekrar yedekte bırak; tüm setlerde üst tekrara ulaşınca uygulama ağırlık artırmanı önerir.</div>`}
   </div>
@@ -1957,6 +1966,7 @@ document.addEventListener("click",async ev=>{
   if(ds.wdelyes){const f=findWorkout(ds.wdelyes);if(f){const x=day(f.d);x.workouts=x.workouts.filter(w=>w.id!==ds.wdelyes);touchDay(f.d);toast("İdman kaydı silindi")}wDel=null;render();return}
   if(ds.wadd){watchAsk=ds.wadd;workMode="train";if(tab!=="work")go("work");else{render();window.scrollTo(0,0)}return}
   if(ds.wskip){watchAsk=null;render();return}
+  if(ds.exg){b.classList.toggle("big");return}
   if(ds.wmode){workMode=ds.wmode;render();return}
   if(ds.rest){workMode="rest";go("work");return}
   if(ds.retend){if(b.dataset.armed){S.profile.returnDone=true;mark("profile");workPick=null;toast("Ana programa geçildi: haftada 4 gün");render()}else{b.dataset.armed="1";b.textContent="Emin misin? Onaylamak için tekrar dokun";b.classList.remove("muted")}return}
@@ -2103,7 +2113,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&sheetOpen)closeShee
 })();
 
 /* yeni sürüm kontrolü (bağımsız sürüm) */
-const APP_V="2026.09.30-0155";
+const APP_V="2026.09.30-1634";
 async function checkUpdate(manual){if(inViewer()||APP_V.startsWith("__"))return;
   try{const r=await fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"});const t=await r.text();const m=t.match(/const APP_V="([^"]+)"/);
     if(m&&m[1]!==APP_V){const el=$("#upd");el.innerHTML=`<span class="grow">Yeni sürüm hazır</span><button class="btn sm" id="btn-upd">Güncelle</button>`;el.hidden=false;el.dataset.v=m[1]}
