@@ -1511,7 +1511,8 @@ function absUsed(c){return absWeeks(c).length}
 function curWeek(){const st=S.school.term.start;if(!st)return null;const n=Math.floor(diffDays(st,today())/7)+1;return n}
 function absDates(c){return Object.entries(S.school.log).filter(([k,v])=>v==="a"&&k.split("|")[1]===c.id).map(([k])=>{const [d,,si]=k.split("|");return {d,h:(c.slots[+si]||{}).h||0}}).sort((a,b)=>a.d<b.d?1:-1)}
 function clash(c,s){return S.school.courses.some(o=>o.id!==c.id&&o.slots.some(t=>t.d===s.d&&toMin(t.s)<toMin(s.e)&&toMin(s.s)<toMin(t.e)))}
-function roomShort(r){const m=String(r||"").trim().match(/^M?\s*([0-9A-Za-zÇĞİÖŞÜçğıöşü]{1,3})/i);return m?m[1].toUpperCase():String(r||"")}
+const ROOM_NAMES={M11102:"101 ve 102",M10Z07:"Z07"};
+function roomShort(r){const k=String(r||"").trim().toUpperCase();if(ROOM_NAMES[k])return ROOM_NAMES[k];const m=String(r||"").trim().match(/^M?\s*([0-9A-Za-zÇĞİÖŞÜçğıöşü]{1,3})/i);return m?m[1].toUpperCase():String(r||"")}
 function sessionsOn(dayIdx){const out=[];S.school.courses.forEach(c=>{const sl=c.slots.filter(s=>s.d===dayIdx).sort((a,b)=>toMin(a.s)-toMin(b.s));if(!sl.length)return;
   const rooms=[...new Set(sl.map(s=>roomShort(s.room)))];out.push({c,i:0,s:{d:dayIdx,s:sl[0].s,e:sl[sl.length-1].e,h:sl.reduce((a,s)=>a+s.h,0),room:"Sınıf "+rooms.join(", ")}})});return out.sort((a,b)=>toMin(a.s.s)-toMin(b.s.s))}
 function absTone(c){const u=absUsed(c),l=absLimit(c)||1,r=u/l;return u>l?"over":r>=.8?"r":r>=.5?"a":"g"}
@@ -2167,7 +2168,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&sheetOpen)closeShee
 })();
 
 /* yeni sürüm kontrolü (bağımsız sürüm) */
-const APP_V="2026.10.02-0031";
+const APP_V="2026.10.02-0035";
 async function checkUpdate(manual){if(inViewer()||APP_V.startsWith("__"))return;
   try{const r=await fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"});const t=await r.text();const m=t.match(/const APP_V="([^"]+)"/);
     if(m&&m[1]!==APP_V){const el=$("#upd");el.innerHTML=`<span class="grow">Yeni sürüm hazır</span><button class="btn sm" id="btn-upd">Güncelle</button>`;el.hidden=false;el.dataset.v=m[1]}
