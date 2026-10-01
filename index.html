@@ -526,6 +526,27 @@ details summary{cursor:pointer;font-weight:700;font-size:14px}
 .af-n{font-size:12.5px;color:var(--amber);font-weight:700}
 body.noscroll{overflow:hidden}
 .sheet{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;justify-content:flex-end}
+.wk-open{display:flex;align-items:center;gap:12px;width:100%;border:0;background:var(--surface);color:var(--fg);border-radius:18px;padding:12px 14px;box-shadow:var(--shadow);cursor:pointer;text-align:left;font:inherit}
+.wk-open b{font-size:15px}.wk-open .badge svg{width:18px;height:18px}
+.wk-sheet{height:94%;max-height:94dvh}
+.tt{--hw:32px;font-size:11px}
+.tt-head{display:grid;grid-template-columns:var(--hw) repeat(var(--cols),1fr);gap:2px;position:sticky;top:0;background:var(--bg);z-index:3;padding:4px 0 6px}
+.tt-head b{text-align:center;font-size:12.5px;display:flex;flex-direction:column;align-items:center;border-radius:10px;padding:4px 0}
+.tt-head b small{font-size:10px;color:var(--muted);font-weight:600}
+.tt-head b.td{background:var(--accent-soft);color:var(--accent)}
+.tt-body{position:relative;margin-top:8px;display:grid;grid-template-columns:var(--hw) repeat(var(--cols),1fr);gap:2px;margin-bottom:8px}
+.tt-hours{position:relative}.tt-hours span{position:absolute;left:0;transform:translateY(-50%);color:var(--muted);font-size:10px;font-variant-numeric:tabular-nums}
+.tt-col{position:relative;background:var(--sunk);border-radius:10px}
+.tt-col.td{background:color-mix(in srgb,var(--accent) 7%,var(--sunk))}
+.tt-col>i{position:absolute;left:0;right:0;border-top:1px dashed var(--line)}
+.tt-b{position:absolute;left:1px;right:1px;border-radius:8px;padding:5px 3px 5px 4px;overflow:hidden;display:flex;flex-direction:column;gap:2px;background:color-mix(in srgb,var(--c) 18%,var(--surface));border-left:3px solid var(--c);box-sizing:border-box}
+.tt-b b{flex:none;font-size:10px;letter-spacing:-.2px;line-height:1.2;color:var(--fg);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;hyphens:auto}
+.tt-b.short b{-webkit-line-clamp:2}.tt-b.short span.num{display:none}
+.tt-b span{font-size:10px;color:var(--muted);font-weight:600;line-height:1.15}
+.tt-b.live{box-shadow:0 0 0 2px var(--c)}
+.tt-now{position:absolute;left:-2px;right:-2px;height:2px;background:var(--accent);z-index:2}.tt-now:before{content:"";position:absolute;left:-3px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.tt-leg{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted);padding-top:6px}
+.tt-leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
 .sh-back{position:absolute;inset:0;background:rgba(8,10,16,.5);animation:shfade .2s ease}
 .sh-panel{position:relative;width:100%;max-width:560px;margin:0 auto;height:88%;max-height:88dvh;background:var(--bg);border-radius:26px 26px 0 0;display:flex;flex-direction:column;box-shadow:0 -12px 40px rgba(0,0,0,.28);animation:shup .3s cubic-bezier(.2,.8,.2,1);padding-bottom:env(safe-area-inset-bottom,0px)}
 .sh-grab{width:42px;height:5px;border-radius:9px;background:var(--line);margin:9px auto 2px;flex:none}
@@ -1542,6 +1563,32 @@ function todayClassStrip(){if(!S.school||!S.school.courses.length)return "";cons
   else if(list.length){t="Bugünkü dersler bitti";sub=nd?"Sıradaki: "+ndTxt:""}
   else{t="Bugün ders yok";sub=nd?"Sıradaki: "+ndTxt:""}
   return `<button class="cls-strip ${live?"live":""}" data-go="school" aria-label="Dersler: ${t.replace(/<[^>]+>/g,"")}"><span class="badge b-blue">${IC.school}</span><span class="grow" style="min-width:0"><b class="clip" style="display:block">${t}</b>${sub?`<span class="small muted clip" style="display:block">${sub}</span>`:""}</span><span class="cs-chev" aria-hidden="true">›</span></button>`}
+const SHORT_N={MAT242:"Dif. Denk.","EMU-201":"EM Alan Teorisi",MAT246:"Komp­leks Analiz","EMU-209":"Bilg. Dest. Tasarım","EMU-203":"Devre Analizi I","EMU-307":"Haber­leşme",EEM445:"Mikro­dalga","İKT351":"Müh. Ekonomi"};
+const shortN=c=>SHORT_N[c.code]||c.name;
+const WK_COL=["#e11d48","#7c3aed","#2563eb","#059669","#d97706","#db2777","#0891b2","#65a30d","#9333ea","#ea580c"];
+function weekGrid(){const cs=S.school.courses;const all=[];cs.forEach((c,ci)=>c.slots.forEach(s=>all.push({c,ci,s})));
+  const days=[0,1,2,3,4].concat(all.some(x=>x.s.d>4)?[5,6].filter(d=>all.some(x=>x.s.d===d)):[]);
+  if(!all.length)return `<div class="empty">Henüz ders yok.</div>`;
+  const t0=Math.floor(Math.min(...all.map(x=>toMin(x.s.s)))/60)*60,t1=Math.ceil(Math.max(...all.map(x=>toMin(x.s.e)))/60)*60;const PX=1.15;const H=(t1-t0)*PX;
+  const tdIdx=wd(today()),now=new Date(),nm=now.getHours()*60+now.getMinutes();
+  const hours=[];for(let t=t0;t<=t1;t+=60)hours.push(t);
+  const totH=d=>all.filter(x=>x.s.d===d).reduce((a,x)=>a+x.s.h,0);
+  return `<div class="tt" style="--cols:${days.length}">
+    <div class="tt-head"><span></span>${days.map(d=>`<b class="${d===tdIdx?"td":""}">${GUN_K[d]}<small>${totH(d)} sa</small></b>`).join("")}</div>
+    <div class="tt-body" style="height:${H}px">
+      <div class="tt-hours">${hours.map(t=>`<span style="top:${(t-t0)*PX}px">${String(t/60).padStart(2,"0")}:00</span>`).join("")}</div>
+      ${days.map((d,i)=>`<div class="tt-col ${d===tdIdx?"td":""}">${hours.map(t=>`<i style="top:${(t-t0)*PX}px"></i>`).join("")}
+        ${all.filter(x=>x.s.d===d).map(x=>{const a=toMin(x.s.s),b=toMin(x.s.e);const col=WK_COL[x.ci%WK_COL.length];const live=d===tdIdx&&nm>=a&&nm<b;
+          return `<div class="tt-b ${live?"live":""} ${b-a<=60?"short":""}" style="top:${(a-t0)*PX}px;height:${(b-a)*PX-2}px;--c:${col}"><b>${esc(shortN(x.c))}</b><span class="num">${x.s.s}–${x.s.e}</span><span>${esc(roomShort(x.s.room))}</span></div>`}).join("")}
+        ${d===tdIdx&&nm>=t0&&nm<=t1?`<em class="tt-now" style="top:${(nm-t0)*PX}px"></em>`:""}</div>`).join("")}
+    </div></div>
+  <div class="tt-leg">${cs.map((c,ci)=>`<span><i style="background:${WK_COL[ci%WK_COL.length]}"></i>${esc(c.code)} · ${esc(c.name)}</span>`).join("")}</div>`}
+function openWeekSheet(){sheetOpen=false;const el=$("#sheet");const tot=S.school.courses.reduce((a,c)=>a+weekHours(c),0);
+  el.innerHTML=`<div class="sh-back" data-shclose="1"></div><div class="sh-panel wk-sheet" role="dialog" aria-modal="true" aria-label="Haftalık ders programı">
+    <div class="sh-grab" aria-hidden="true"></div>
+    <div class="sh-head"><div class="row between"><div><div class="sh-t">Haftalık program</div><div class="small muted">${S.school.courses.length} ders · haftada ${tot} saat</div></div><button class="iconbtn" data-shclose="1" aria-label="Kapat">${ico("x")}</button></div></div>
+    <div class="sh-body">${weekGrid()}</div></div>`;
+  el.hidden=false;document.body.classList.add("noscroll")}
 function vSchool(){
   const td=today(),tdIdx=wd(td);if(schDay==null)schDay=tdIdx<5?tdIdx:0;
   const date=addDays(td,schDay-tdIdx);const isToday=date===td;const past=date<=td;
@@ -1572,6 +1619,7 @@ function vSchool(){
         :`<div class="row"><button class="link muted" data-limed="${c.id}">Sınırı düzenle</button>${schDel===c.id?`<button class="link" data-cdelyes="${c.id}">Listeden çıkarmayı onayla</button><button class="link muted" data-cdelno="1">Vazgeç</button>`:`<button class="link muted" data-cdel="${c.id}">Listeden çıkar</button>`}</div>`}
     </div>`};
   return `<div class="row between"><h2>Dersler</h2><span class="pill">${esc(S.school.term.name)}</span></div>
+  <button class="wk-open" data-wkopen="1"><span class="badge b-blue">${ico("list")}</span><span class="grow"><b>Haftalık programı gör</b><span class="small muted" style="display:block">Tüm haftanın derslerini tek ekranda aç</span></span><span class="cs-chev" aria-hidden="true">›</span></button>
   <div class="hero sch-hero">
     <div class="row between"><h3>${isToday?"Bugün · "+GUN_U[schDay]:GUN_U[schDay]+" · "+fmtD(date)}</h3><span class="pill">${list.length} ders · ${list.reduce((a,x)=>a+x.s.h,0)} saat</span></div>
     ${isToday&&nextIdx>=0?(()=>{const x=list[nextIdx];const s0=toMin(x.s.s);const live=nm>=s0;return `<div><div class="big" style="font-size:28px">${esc(x.c.name)}</div><div style="opacity:.85;margin-top:6px">${live?"Şu an sürüyor":x.s.s+" · "+(s0-nm<60?(s0-nm)+" dk sonra":Math.floor((s0-nm)/60)+" sa "+((s0-nm)%60)+" dk sonra")} · ${esc(x.s.room)}</div></div>`})()
@@ -2021,6 +2069,7 @@ document.addEventListener("click",async ev=>{
   if(ds.pex){progEx=ds.pex;render();return}
   if(ds.qall){openSheet();return}
   if(ds.shclose){closeSheet();return}
+  if(ds.wkopen){openWeekSheet();return}
   if(ds.qcat){qCat=ds.qcat;if(sheetOpen){refreshSheet(true)}else render();return}
   if(ds.qf){const f=quickFoods()[+ds.qf];const d=fd();const x=day(d);x.foods.push({id:uid(),n:qLabel(f),kcal:f.k,p:f.p});touchDay(d);
     const tot=x.foods.reduce((a,z)=>a+(+z.kcal||0),0),lft=targets().kcal-Math.round(tot);toast(f.n+" +"+f.k+" kcal · "+(lft>=0?"kalan "+lft:"hedefin "+Math.abs(lft)+" üstünde"));render();refreshSheet();return}
@@ -2167,7 +2216,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&sheetOpen)closeShee
 })();
 
 /* yeni sürüm kontrolü (bağımsız sürüm) */
-const APP_V="2026.10.02-0036";
+const APP_V="2026.10.02-0039";
 async function checkUpdate(manual){if(inViewer()||APP_V.startsWith("__"))return;
   try{const r=await fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"});const t=await r.text();const m=t.match(/const APP_V="([^"]+)"/);
     if(m&&m[1]!==APP_V){const el=$("#upd");el.innerHTML=`<span class="grow">Yeni sürüm hazır</span><button class="btn sm" id="btn-upd">Güncelle</button>`;el.hidden=false;el.dataset.v=m[1]}
